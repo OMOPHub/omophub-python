@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -92,7 +93,7 @@ class Vocabularies:
     def domains(
         self,
         *,
-        vocabulary_ids: list[str] | None = None,
+        vocabulary_ids: builtins.list[str] | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
@@ -202,7 +203,7 @@ class AsyncVocabularies:
     async def domains(
         self,
         *,
-        vocabulary_ids: list[str] | None = None,
+        vocabulary_ids: builtins.list[str] | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
