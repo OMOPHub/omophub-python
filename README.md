@@ -1,8 +1,9 @@
 # OMOPHub Python SDK
 
+[![Codecov test coverage](https://codecov.io/gh/omopHub/omophub-python/branch/main/graph/badge.svg)](https://app.codecov.io/gh/omopHub/omophub-python?branch=main)
 [![PyPI version](https://badge.fury.io/py/omophub.svg)](https://badge.fury.io/py/omophub)
 [![Python Versions](https://img.shields.io/pypi/pyversions/omophub.svg)](https://pypi.org/project/omophub/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 The official Python SDK for [OMOPHub](https://omophub.com) - a medical vocabulary API providing access to OHDSI ATHENA standardized vocabularies including SNOMED CT, ICD-10, RxNorm, LOINC, and 90+ other medical terminologies.
 
