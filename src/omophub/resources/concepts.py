@@ -94,17 +94,31 @@ class Concepts:
         self,
         vocabulary_id: str,
         concept_code: str,
+        *,
+        include_relationships: bool = False,
+        include_synonyms: bool = False,
     ) -> Concept:
         """Get a concept by vocabulary and code.
 
         Args:
             vocabulary_id: The vocabulary ID (e.g., "SNOMED", "ICD10CM")
             concept_code: The concept code within the vocabulary
+            include_relationships: Include related concepts
+            include_synonyms: Include concept synonyms
 
         Returns:
-            The concept data with mappings
+            The concept data with optional relationships and synonyms
         """
-        return self._request.get(f"/concepts/by-code/{vocabulary_id}/{concept_code}")
+        params: dict[str, Any] = {}
+        if include_relationships:
+            params["include_relationships"] = "true"
+        if include_synonyms:
+            params["include_synonyms"] = "true"
+
+        return self._request.get(
+            f"/concepts/by-code/{vocabulary_id}/{concept_code}",
+            params=params or None,
+        )
 
     def batch(
         self,
@@ -274,10 +288,30 @@ class AsyncConcepts:
         self,
         vocabulary_id: str,
         concept_code: str,
+        *,
+        include_relationships: bool = False,
+        include_synonyms: bool = False,
     ) -> Concept:
-        """Get a concept by vocabulary and code."""
+        """Get a concept by vocabulary and code.
+
+        Args:
+            vocabulary_id: The vocabulary ID (e.g., "SNOMED", "ICD10CM")
+            concept_code: The concept code within the vocabulary
+            include_relationships: Include related concepts
+            include_synonyms: Include concept synonyms
+
+        Returns:
+            The concept data with optional relationships and synonyms
+        """
+        params: dict[str, Any] = {}
+        if include_relationships:
+            params["include_relationships"] = "true"
+        if include_synonyms:
+            params["include_synonyms"] = "true"
+
         return await self._request.get(
-            f"/concepts/by-code/{vocabulary_id}/{concept_code}"
+            f"/concepts/by-code/{vocabulary_id}/{concept_code}",
+            params=params or None,
         )
 
     async def batch(

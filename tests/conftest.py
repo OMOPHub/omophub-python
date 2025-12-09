@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import pytest
@@ -133,6 +134,15 @@ def mock_error_response() -> dict[str, Any]:
             "details": {"concept_id": 999999999},
         },
     }
+
+
+@pytest.fixture(autouse=True)
+def rate_limit_delay(request: pytest.FixtureRequest) -> None:
+    """Add delay between integration tests to avoid rate limiting."""
+    yield
+    # Only delay for integration tests
+    if "integration" in request.keywords:
+        time.sleep(1)
 
 
 # Well-known test concept IDs for integration tests

@@ -201,7 +201,7 @@ class TestSyncHTTPClient:
         assert "Content-Type" in headers
         assert headers["Content-Type"] == "application/json"
         assert "User-Agent" in headers
-        assert "omophub-python" in headers["User-Agent"]
+        assert "OMOPHub-SDK-Python" in headers["User-Agent"]
 
         client.close()
 
@@ -350,7 +350,7 @@ class TestAsyncHTTPClient:
         assert "Accept" in headers
         assert headers["Accept"] == "application/json"
         assert "User-Agent" in headers
-        assert "omophub-python" in headers["User-Agent"]
+        assert "OMOPHub-SDK-Python" in headers["User-Agent"]
 
         await client.close()
 

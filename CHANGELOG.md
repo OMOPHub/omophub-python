@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-12-09
+
+### Added
+
+- `include_synonyms` and `include_relationships` parameters to `concepts.get_by_code()` method for retrieving concept synonyms and relationships in a single request.
+
+### Changed
+
+- User-Agent header updated to `OMOPHub-SDK-Python/{version}`.
+
 ## [0.1.0] - 2025-12-01
 
 ### Added
@@ -27,5 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/omopHub/omophub-python/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/omopHub/omophub-python/releases/tag/v0.1.0

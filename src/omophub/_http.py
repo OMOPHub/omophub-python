@@ -103,7 +103,7 @@ class SyncHTTPClient(HTTPClient):
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": f"omophub-python/{get_version()}",
+            "User-Agent": f"OMOPHub-SDK-Python/{get_version()}",
         }
 
     def request(
@@ -186,7 +186,7 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": f"omophub-python/{get_version()}",
+            "User-Agent": f"OMOPHub-SDK-Python/{get_version()}",
         }
 
     async def request(
