@@ -1,11 +1,31 @@
 # OMOPHub Python SDK
 
-[![Codecov test coverage](https://codecov.io/gh/omopHub/omophub-python/branch/main/graph/badge.svg)](https://app.codecov.io/gh/omopHub/omophub-python?branch=main)
-[![PyPI version](https://badge.fury.io/py/omophub.svg)](https://badge.fury.io/py/omophub)
+**Query millions standardized medical concepts via simple Python API**
+
+Access SNOMED CT, ICD-10, RxNorm, LOINC, and 90+ OHDSI ATHENA vocabularies without downloading, installing, or maintaining local databases.
+
+[![PyPI version](https://badge.fury.io/py/omophub.svg)](https://pypi.org/project/omophub/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/omophub.svg)](https://pypi.org/project/omophub/)
+[![Codecov](https://codecov.io/gh/omopHub/omophub-python/branch/main/graph/badge.svg)](https://app.codecov.io/gh/omopHub/omophub-python?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-The official Python SDK for [OMOPHub](https://omophub.com) - a medical vocabulary API providing access to OHDSI ATHENA standardized vocabularies including SNOMED CT, ICD-10, RxNorm, LOINC, and 90+ other medical terminologies.
+**[Documentation](https://docs.omophub.com/sdks/python/overview)** ·
+**[API Reference](https://docs.omophub.com/api-reference)** ·
+**[Examples](https://github.com/omopHub/omophub-python/tree/main/examples)**
+
+---
+
+## Why OMOPHub?
+
+Working with OHDSI ATHENA vocabularies traditionally requires downloading multi-gigabyte files, setting up a PostgreSQL database, and writing complex SQL queries. **OMOPHub eliminates this friction.**
+
+| Traditional Approach | With OMOPHub |
+|---------------------|--------------|
+| Download 5GB+ ATHENA vocabulary files | `pip install omophub` |
+| Set up and maintain database | One API call |
+| Write complex SQL with multiple JOINs | Simple Python methods |
+| Manually update vocabularies quarterly | Always current data |
+| Local infrastructure required | Works anywhere Python runs |
 
 ## Installation
 
@@ -16,188 +36,115 @@ pip install omophub
 ## Quick Start
 
 ```python
-import omophub
+from omophub import OMOPHub
 
-# Initialize the client
-client = omophub.OMOPHub(api_key="oh_xxxxxxxxx")
+# Initialize client (uses OMOPHUB_API_KEY env variable, or pass api_key="...")
+client = OMOPHub()
 
 # Get a concept by ID
 concept = client.concepts.get(201826)
 print(concept["concept_name"])  # "Type 2 diabetes mellitus"
 
-# Search for concepts
-results = client.search.basic("diabetes", vocabulary_ids=["SNOMED", "ICD10CM"])
-for concept in results["concepts"]:
-    print(f"{concept['concept_id']}: {concept['concept_name']}")
+# Search for concepts across vocabularies
+results = client.search.basic("metformin", vocabulary_ids=["RxNorm"], domain_ids=["Drug"])
+for c in results["concepts"]:
+    print(f"{c['concept_id']}: {c['concept_name']}")
 
-# Get concept ancestors
+# Map ICD-10 code to SNOMED
+mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabularies=["SNOMED"])
+
+# Navigate concept hierarchy
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
-
-# Map concepts between vocabularies
-mappings = client.mappings.get(201826, target_vocabularies=["ICD10CM"])
 ```
 
-## Async Usage
+## Async Support
 
 ```python
-import omophub
 import asyncio
+from omophub import AsyncOMOPHub
 
 async def main():
-    async with omophub.AsyncOMOPHub(api_key="oh_xxx") as client:
+    async with AsyncOMOPHub() as client:
         concept = await client.concepts.get(201826)
         print(concept["concept_name"])
 
 asyncio.run(main())
 ```
 
+## Use Cases
+
+### ETL & Data Pipelines
+
+Validate and map clinical codes during OMOP CDM transformations:
+
+```python
+# Validate that a source code exists and find its standard equivalent
+def validate_and_map(source_vocab, source_code):
+    concept = client.concepts.get_by_code(source_vocab, source_code)
+    if concept["standard_concept"] != "S":
+        mappings = client.mappings.get(concept["concept_id"], 
+                                        target_vocabularies=["SNOMED"])
+        return mappings["mappings"][0]["target_concept_id"]
+    return concept["concept_id"]
+```
+
+### Data Quality Checks
+
+Verify codes exist and are valid standard concepts:
+
+```python
+# Check if all your condition codes are valid
+condition_codes = ["E11.9", "I10", "J44.9"]  # ICD-10 codes
+for code in condition_codes:
+    try:
+        concept = client.concepts.get_by_code("ICD10CM", code)
+        print(f"OK {code}: {concept['concept_name']}")
+    except omophub.NotFoundError:
+        print(f"ERROR {code}: Invalid code!")
+```
+
+### Phenotype Development
+
+Explore hierarchies to build comprehensive concept sets:
+
+```python
+# Get all descendants of "Type 2 diabetes mellitus" for phenotype
+descendants = client.hierarchy.descendants(201826, max_levels=5, standard_only=True)
+concept_set = [d["concept_id"] for d in descendants["concepts"]]
+print(f"Found {len(concept_set)} concepts for T2DM phenotype")
+```
+
+### Clinical Applications
+
+Build terminology lookups into healthcare applications:
+
+```python
+# Autocomplete for clinical coding interface
+suggestions = client.concepts.suggest("diab", vocabulary="SNOMED", limit=10)
+# Returns: ["Diabetes mellitus", "Diabetic nephropathy", "Diabetic retinopathy", ...]
+```
+
+## API Resources
+
+| Resource | Description | Key Methods |
+|----------|-------------|-------------|
+| `concepts` | Concept lookup and batch operations | `get()`, `get_by_code()`, `batch()`, `suggest()` |
+| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `fuzzy()` |
+| `hierarchy` | Navigate concept relationships | `ancestors()`, `descendants()` |
+| `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
+| `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |
+| `domains` | Domain information | `list()`, `get()`, `concepts()` |
+
 ## Configuration
 
-### API Key
-
-Set your API key in one of three ways:
-
 ```python
-# 1. Pass directly to client
-client = omophub.OMOPHub(api_key="oh_xxxxxxxxx")
-
-# 2. Set environment variable
-# export OMOPHUB_API_KEY=oh_xxxxxxxxx
-client = omophub.OMOPHub()
-
-# 3. Set module-level variable
-import omophub
-omophub.api_key = "oh_xxxxxxxxx"
-client = omophub.OMOPHub()
-```
-
-Get your API key from the [OMOPHub Dashboard](https://dashboard.omophub.com/api-keys).
-
-### Additional Options
-
-```python
-client = omophub.OMOPHub(
-    api_key="oh_xxx",
-    base_url="https://api.omophub.com/v1",  # API base URL
-    timeout=30.0,                            # Request timeout in seconds
-    max_retries=3,                           # Retry attempts for failed requests
-    vocab_version="2025.2",                  # Specific vocabulary version
+client = OMOPHub(
+    api_key="oh_xxx",                        # Or set OMOPHUB_API_KEY env var
+    base_url="https://api.omophub.com/v1",   # API endpoint
+    timeout=30.0,                             # Request timeout (seconds)
+    max_retries=3,                            # Retry attempts
+    vocab_version="2025.2",                   # Specific vocabulary version
 )
-```
-
-## Resources
-
-### Concepts
-
-```python
-# Get concept by ID
-concept = client.concepts.get(201826)
-
-# Get concept by vocabulary code
-concept = client.concepts.get_by_code("SNOMED", "73211009")
-
-# Batch get concepts
-result = client.concepts.batch([201826, 4329847, 73211009])
-
-# Get autocomplete suggestions
-suggestions = client.concepts.suggest("diab", vocabulary="SNOMED", limit=10)
-
-# Get related concepts
-related = client.concepts.related(201826, relatedness_types=["hierarchical", "semantic"])
-
-# Get concept relationships
-relationships = client.concepts.relationships(201826)
-```
-
-### Search
-
-```python
-# Basic search
-results = client.search.basic(
-    "heart attack",
-    vocabulary_ids=["SNOMED"],
-    domain_ids=["Condition"],
-    page=1,
-    page_size=20,
-)
-
-# Advanced search with facets
-results = client.search.advanced(
-    "myocardial infarction",
-    vocabularies=["SNOMED", "ICD10CM"],
-    standard_concepts_only=True,
-)
-
-# Semantic search
-results = client.search.semantic("chest pain with shortness of breath")
-
-# Fuzzy search (typo-tolerant)
-results = client.search.fuzzy("diabetis")  # finds "diabetes"
-
-# Auto-pagination iterator
-for concept in client.search.basic_iter("diabetes", page_size=100):
-    print(concept["concept_name"])
-```
-
-### Hierarchy
-
-```python
-# Get ancestors
-ancestors = client.hierarchy.ancestors(
-    201826,
-    max_levels=5,
-    relationship_types=["Is a"],
-)
-
-# Get descendants
-descendants = client.hierarchy.descendants(
-    201826,
-    max_levels=3,
-    standard_only=True,
-)
-```
-
-### Mappings
-
-```python
-# Get mappings for a concept
-mappings = client.mappings.get(
-    201826,
-    target_vocabularies=["ICD10CM", "Read"],
-    include_mapping_quality=True,
-)
-
-# Map concepts to target vocabulary
-result = client.mappings.map(
-    source_concepts=[201826, 4329847],
-    target_vocabulary="ICD10CM",
-)
-```
-
-### Vocabularies
-
-```python
-# List all vocabularies
-vocabularies = client.vocabularies.list(include_stats=True)
-
-# Get vocabulary details
-snomed = client.vocabularies.get("SNOMED", include_domains=True)
-
-# Get vocabulary statistics
-stats = client.vocabularies.stats("SNOMED")
-```
-
-### Domains
-
-```python
-# List all domains
-domains = client.domains.list(include_statistics=True)
-
-# Get domain details
-condition = client.domains.get("Condition")
-
-# Get concepts in a domain
-concepts = client.domains.concepts("Drug", standard_only=True)
 ```
 
 ## Error Handling
@@ -206,50 +153,99 @@ concepts = client.domains.concepts("Drug", standard_only=True)
 import omophub
 
 try:
-    client = omophub.OMOPHub(api_key="oh_xxx")
     concept = client.concepts.get(999999999)
 except omophub.NotFoundError as e:
     print(f"Concept not found: {e.message}")
 except omophub.AuthenticationError as e:
-    print(f"Authentication failed: {e.message}")
+    print(f"Check your API key: {e.message}")
 except omophub.RateLimitError as e:
     print(f"Rate limited. Retry after {e.retry_after} seconds")
-except omophub.ValidationError as e:
-    print(f"Invalid request: {e.message}")
 except omophub.APIError as e:
     print(f"API error {e.status_code}: {e.message}")
-except omophub.OMOPHubError as e:
-    print(f"SDK error: {e.message}")
 ```
 
-## Type Hints
+## Type Safety
 
-The SDK is fully typed with TypedDict definitions for all API responses:
+The SDK is fully typed with TypedDict definitions for IDE autocomplete:
 
 ```python
 from omophub import OMOPHub, Concept
 
-client = OMOPHub(api_key="oh_xxx")
+client = OMOPHub()
 concept: Concept = client.concepts.get(201826)
 
 # IDE autocomplete works for all fields
-print(concept["concept_id"])
-print(concept["concept_name"])
-print(concept["vocabulary_id"])
+concept["concept_id"]      # int
+concept["concept_name"]    # str
+concept["vocabulary_id"]   # str
+concept["domain_id"]       # str
+concept["concept_class_id"] # str
 ```
+
+## Integration Examples
+
+### With Pandas
+
+```python
+import pandas as pd
+
+# Search and load into DataFrame
+results = client.search.basic("hypertension", page_size=100)
+df = pd.DataFrame(results["concepts"])
+print(df[["concept_id", "concept_name", "vocabulary_id"]].head())
+```
+
+### In Jupyter Notebooks
+
+```python
+# Iterate through all results with auto-pagination
+for concept in client.search.basic_iter("diabetes", page_size=100):
+    process_concept(concept)
+```
+
+## Compared to Alternatives
+
+| Feature | OMOPHub SDK | ATHENA Download | OHDSI WebAPI |
+|---------|-------------|-----------------|--------------|
+| Setup time | 1 minute | Hours | Hours |
+| Infrastructure | None | Database required | Full OHDSI stack |
+| Updates | Automatic | Manual download | Manual |
+| Programmatic access | Native Python | SQL queries | REST API |
+
+**Best for:** Teams who need quick, programmatic access to OMOP vocabularies without infrastructure overhead.
 
 ## Documentation
 
 - [Full Documentation](https://docs.omophub.com/sdks/python/overview)
 - [API Reference](https://docs.omophub.com/api-reference)
 - [Examples](https://github.com/omopHub/omophub-python/tree/main/examples)
+- [Get API Key](https://dashboard.omophub.com/api-keys)
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+```bash
+# Clone and install for development
+git clone https://github.com/omopHub/omophub-python.git
+cd omophub-python
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+```
+
+## Support
+
+- [GitHub Issues](https://github.com/omopHub/omophub-python/issues)
+- [GitHub Discussions](https://github.com/omopHub/omophub-python/discussions)
+- Email: support@omophub.com
+- Website: [omophub.com](https://omophub.com)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
+---
 
-- [GitHub Issues](https://github.com/omopHub/omophub-python/issues)
-- [Documentation](https://docs.omophub.com)
-- [Website](https://omophub.com)
+*Built for the OHDSI community*
