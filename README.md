@@ -17,7 +17,7 @@ Access SNOMED CT, ICD-10, RxNorm, LOINC, and 90+ OHDSI ATHENA vocabularies witho
 
 ## Why OMOPHub?
 
-Working with OHDSI ATHENA vocabularies traditionally requires downloading multi-gigabyte files, setting up a PostgreSQL database, and writing complex SQL queries. **OMOPHub eliminates this friction.**
+Working with OHDSI ATHENA vocabularies traditionally requires downloading multi-gigabyte files, setting up a database instance, and writing complex SQL queries. **OMOPHub eliminates this friction.**
 
 | Traditional Approach | With OMOPHub |
 |---------------------|--------------|
