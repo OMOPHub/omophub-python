@@ -56,7 +56,7 @@ def autocomplete_example() -> None:
     print("\n=== Autocomplete ===")
 
     # Get suggestions as user types
-    suggestions = client.concepts.suggest("hypert", limit=5)
+    suggestions = client.concepts.suggest("hypert", page_size=5)
 
     print("Suggestions for 'hypert':")
     for s in suggestions[:5]:
