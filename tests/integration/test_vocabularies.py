@@ -48,13 +48,9 @@ class TestVocabulariesIntegration:
         assert vocab["vocabulary_id"] == "SNOMED"
         assert "vocabulary_name" in vocab
 
-    def test_get_vocabulary_with_options(self, integration_client: OMOPHub) -> None:
-        """Get vocabulary with stats and domains."""
-        vocab = integration_client.vocabularies.get(
-            "SNOMED",
-            include_stats=True,
-            include_domains=True,
-        )
+    def test_get_vocabulary_basic(self, integration_client: OMOPHub) -> None:
+        """Get vocabulary (use stats() method for statistics)."""
+        vocab = integration_client.vocabularies.get("SNOMED")
 
         assert vocab["vocabulary_id"] == "SNOMED"
         assert "vocabulary_name" in vocab

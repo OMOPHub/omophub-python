@@ -46,9 +46,7 @@ class TestMappingsResource:
     ) -> None:
         """Test getting mappings with filter options."""
         route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         sync_client.mappings.get(
@@ -95,9 +93,7 @@ class TestMappingsResource:
     ) -> None:
         """Test mapping concepts with additional options."""
         route = respx.post(f"{base_url}/concepts/map").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         sync_client.mappings.map(
@@ -114,7 +110,6 @@ class TestMappingsResource:
         assert route.calls[0].request.content
 
 
-
 class TestAsyncMappingsResource:
     """Tests for the asynchronous AsyncMappings resource."""
 
@@ -125,9 +120,7 @@ class TestAsyncMappingsResource:
     ) -> None:
         """Test async getting mappings."""
         respx.get(f"{base_url}/concepts/201826/mappings").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         result = await async_client.mappings.get(201826)
@@ -140,9 +133,7 @@ class TestAsyncMappingsResource:
     ) -> None:
         """Test async mappings with filters."""
         route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         await async_client.mappings.get(
@@ -162,9 +153,7 @@ class TestAsyncMappingsResource:
     ) -> None:
         """Test async mapping concepts."""
         respx.post(f"{base_url}/concepts/map").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         result = await async_client.mappings.map(
@@ -181,9 +170,7 @@ class TestAsyncMappingsResource:
     ) -> None:
         """Test async mapping with options."""
         route = respx.post(f"{base_url}/concepts/map").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"mappings": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
         await async_client.mappings.map(
@@ -194,4 +181,3 @@ class TestAsyncMappingsResource:
         )
 
         assert route.calls[0].request.content
-

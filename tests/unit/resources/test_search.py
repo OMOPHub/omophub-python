@@ -36,12 +36,12 @@ class TestSearchResource:
         assert "concepts" in result
 
     @respx.mock
-    def test_basic_search_with_filters(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_basic_search_with_filters(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test basic search with vocabulary and domain filters."""
         route = respx.get(f"{base_url}/search/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         sync_client.search.basic(
@@ -95,7 +95,9 @@ class TestSearchResource:
         assert len(concepts) == 2
 
     @respx.mock
-    def test_basic_iter_multiple_pages(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_basic_iter_multiple_pages(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test basic_iter auto-pagination across multiple pages."""
         page1_response = {
             "success": True,
@@ -214,9 +216,7 @@ class TestAsyncSearchResource:
     ) -> None:
         """Test async basic search with all filters."""
         route = respx.get(f"{base_url}/search/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         await async_client.search.basic(
@@ -248,9 +248,7 @@ class TestAsyncSearchResource:
     ) -> None:
         """Test async advanced search."""
         respx.post(f"{base_url}/search/advanced").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         result = await async_client.search.advanced(

@@ -29,7 +29,7 @@ class TestSyncHTTPClient:
                 return_value=Response(200, json={"success": True})
             )
 
-            content, status_code, headers = client.request(
+            content, status_code, _ = client.request(
                 "GET", "https://api.example.com/test"
             )
 
@@ -167,7 +167,7 @@ class TestSyncHTTPClient:
             respx.get("https://api.example.com/test").mock(side_effect=side_effect)
 
             with patch("time.sleep"):  # Skip actual sleep
-                content, status_code, _ = client.request(
+                _, status_code, _ = client.request(
                     "GET", "https://api.example.com/test"
                 )
 
@@ -185,9 +185,8 @@ class TestSyncHTTPClient:
                 side_effect=httpx.ConnectError("Connection refused")
             )
 
-            with patch("time.sleep"):  # Skip actual sleep
-                with pytest.raises(ConnectionError):
-                    client.request("GET", "https://api.example.com/test")
+            with patch("time.sleep"), pytest.raises(ConnectionError):
+                client.request("GET", "https://api.example.com/test")
 
         client.close()
 
@@ -244,7 +243,7 @@ class TestAsyncHTTPClient:
                 return_value=Response(200, json={"success": True})
             )
 
-            content, status_code, headers = await client.request(
+            content, status_code, _ = await client.request(
                 "GET", "https://api.example.com/test"
             )
 
@@ -325,7 +324,7 @@ class TestAsyncHTTPClient:
             respx.get("https://api.example.com/test").mock(side_effect=side_effect)
 
             with patch("asyncio.sleep"):  # Skip actual sleep
-                content, status_code, _ = await client.request(
+                _, status_code, _ = await client.request(
                     "GET", "https://api.example.com/test"
                 )
 

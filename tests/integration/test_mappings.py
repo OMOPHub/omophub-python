@@ -27,20 +27,17 @@ class TestMappingsIntegration:
         """Get ICD-10 mappings for SNOMED concept."""
         result = integration_client.mappings.get(
             DIABETES_CONCEPT_ID,
-            target_vocabularies=["ICD10CM"],
-            direction="outgoing",
+            target_vocabulary="ICD10CM",
         )
 
         mappings = extract_data(result, "mappings")
         assert isinstance(mappings, list)
 
     def test_get_mappings_with_options(self, integration_client: OMOPHub) -> None:
-        """Get mappings with quality and context options."""
+        """Get mappings with include_invalid option."""
         result = integration_client.mappings.get(
             DIABETES_CONCEPT_ID,
-            include_mapping_quality=True,
-            include_context=True,
-            page_size=50,
+            include_invalid=True,
         )
 
         mappings = extract_data(result, "mappings")

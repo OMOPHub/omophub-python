@@ -81,7 +81,9 @@ class TestAsyncOMOPHubClient:
         concept = await async_client.concepts.get(201826)
         assert concept["concept_id"] == 201826
 
-    def test_async_client_has_resources(self, async_client: omophub.AsyncOMOPHub) -> None:
+    def test_async_client_has_resources(
+        self, async_client: omophub.AsyncOMOPHub
+    ) -> None:
         """Test that async client has all expected resources."""
         assert hasattr(async_client, "concepts")
         assert hasattr(async_client, "search")

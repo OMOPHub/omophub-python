@@ -23,8 +23,16 @@ class TestHierarchyResource:
             "success": True,
             "data": {
                 "ancestors": [
-                    {"concept_id": 201820, "concept_name": "Diabetes mellitus", "level": 1},
-                    {"concept_id": 4000, "concept_name": "Endocrine disorder", "level": 2},
+                    {
+                        "concept_id": 201820,
+                        "concept_name": "Diabetes mellitus",
+                        "level": 1,
+                    },
+                    {
+                        "concept_id": 4000,
+                        "concept_name": "Endocrine disorder",
+                        "level": 2,
+                    },
                 ],
                 "summary": {"total_ancestors": 2, "max_level": 2},
             },
@@ -37,7 +45,9 @@ class TestHierarchyResource:
         assert "ancestors" in result
 
     @respx.mock
-    def test_get_ancestors_with_options(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_get_ancestors_with_options(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test getting ancestors with all options."""
         route = respx.get(f"{base_url}/concepts/201826/ancestors").mock(
             return_value=Response(
@@ -139,7 +149,6 @@ class TestHierarchyResource:
         assert "max_levels=20" in url_str
 
 
-
 class TestAsyncHierarchyResource:
     """Tests for the asynchronous AsyncHierarchy resource."""
 
@@ -228,4 +237,3 @@ class TestAsyncHierarchyResource:
         assert "include_invalid=true" in url_str
         assert "max_levels=5" in url_str
         assert "include_paths=true" in url_str
-

@@ -41,7 +41,9 @@ class Mappings:
         if vocab_release:
             params["vocab_release"] = vocab_release
 
-        return self._request.get(f"/concepts/{concept_id}/mappings", params=params or None)
+        return self._request.get(
+            f"/concepts/{concept_id}/mappings", params=params or None
+        )
 
     def map(
         self,
@@ -77,7 +79,9 @@ class Mappings:
         if vocab_release:
             params["vocab_release"] = vocab_release
 
-        return self._request.post("/concepts/map", json_data=body, params=params or None)
+        return self._request.post(
+            "/concepts/map", json_data=body, params=params or None
+        )
 
 
 class AsyncMappings:
@@ -151,4 +155,6 @@ class AsyncMappings:
         if vocab_release:
             params["vocab_release"] = vocab_release
 
-        return await self._request.post("/concepts/map", json_data=body, params=params or None)
+        return await self._request.post(
+            "/concepts/map", json_data=body, params=params or None
+        )

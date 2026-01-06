@@ -176,9 +176,7 @@ class TestSyncRequest:
 
             assert exc_info.value.status_code == 401
 
-    def test_error_parsing_429_with_retry_after(
-        self, request_handler: Request
-    ) -> None:
+    def test_error_parsing_429_with_retry_after(self, request_handler: Request) -> None:
         """Test 429 error parsing with Retry-After header."""
         with respx.mock:
             respx.get("https://api.example.com/v1/test").mock(
@@ -228,9 +226,7 @@ class TestSyncRequest:
 
             assert "Invalid JSON" in str(exc_info.value)
 
-    def test_json_decode_error_on_error_status(
-        self, request_handler: Request
-    ) -> None:
+    def test_json_decode_error_on_error_status(self, request_handler: Request) -> None:
         """Test handling of invalid JSON on error status code."""
         with respx.mock:
             respx.get("https://api.example.com/v1/test").mock(
@@ -383,9 +379,7 @@ class TestAsyncRequest:
             assert exc_info.value.request_id == "req_xyz789"
 
     @pytest.mark.asyncio
-    async def test_async_json_decode_error(
-        self, request_handler: AsyncRequest
-    ) -> None:
+    async def test_async_json_decode_error(self, request_handler: AsyncRequest) -> None:
         """Test async handling of invalid JSON."""
         with respx.mock:
             respx.get("https://api.example.com/v1/test").mock(
@@ -398,9 +392,7 @@ class TestAsyncRequest:
             assert "Invalid JSON" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_async_rate_limit_error(
-        self, request_handler: AsyncRequest
-    ) -> None:
+    async def test_async_rate_limit_error(self, request_handler: AsyncRequest) -> None:
         """Test async 429 rate limit error with retry-after."""
         with respx.mock:
             respx.get("https://api.example.com/v1/test").mock(

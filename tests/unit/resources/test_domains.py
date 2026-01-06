@@ -37,9 +37,7 @@ class TestDomainsResource:
         assert "domains" in result
 
     @respx.mock
-    def test_list_domains_with_stats(
-        self, sync_client: OMOPHub, base_url: str
-    ) -> None:
+    def test_list_domains_with_stats(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test listing domains with include_stats option."""
         route = respx.get(f"{base_url}/domains").mock(
             return_value=Response(
@@ -72,9 +70,7 @@ class TestDomainsResource:
     ) -> None:
         """Test listing domains without stats (default)."""
         route = respx.get(f"{base_url}/domains").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"domains": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"domains": []}})
         )
 
         sync_client.domains.list()
@@ -128,9 +124,7 @@ class TestAsyncDomainsResource:
     ) -> None:
         """Test async listing domains."""
         respx.get(f"{base_url}/domains").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"domains": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"domains": []}})
         )
 
         result = await async_client.domains.list()
@@ -143,9 +137,7 @@ class TestAsyncDomainsResource:
     ) -> None:
         """Test async listing domains with include_stats."""
         route = respx.get(f"{base_url}/domains").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"domains": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"domains": []}})
         )
 
         await async_client.domains.list(include_stats=True)
@@ -160,9 +152,7 @@ class TestAsyncDomainsResource:
     ) -> None:
         """Test async getting domain concepts."""
         route = respx.get(f"{base_url}/domains/Condition/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         await async_client.domains.concepts(

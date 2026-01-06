@@ -87,9 +87,7 @@ class TestConceptsResource:
     ) -> None:
         """Test batch concepts with all options."""
         route = respx.post(f"{base_url}/concepts/batch").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         sync_client.concepts.batch(
@@ -312,9 +310,7 @@ class TestAsyncConceptsResource:
     ) -> None:
         """Test async batch with options."""
         route = respx.post(f"{base_url}/concepts/batch").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         await async_client.concepts.batch(
