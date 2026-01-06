@@ -44,7 +44,7 @@ class TestMappingsResource:
     def test_get_mappings_with_filters(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
-        """Test getting mappings with all filter options."""
+        """Test getting mappings with filter options."""
         route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"mappings": []}}
@@ -53,33 +53,13 @@ class TestMappingsResource:
 
         sync_client.mappings.get(
             201826,
-            target_vocabularies=["ICD10CM", "ICD9CM"],
-            mapping_types=["MAPS TO", "IS A"],
-            direction="outgoing",
-            include_indirect=True,
-            standard_only=True,
-            include_mapping_quality=True,
-            include_synonyms=True,
-            include_context=True,
-            active_only=False,
-            sort_by="mapping_type",
-            sort_order="asc",
-            page=1,
-            page_size=100,
+            target_vocabulary="ICD10CM",
+            include_invalid=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "target_vocabularies=ICD10CM%2CICD9CM" in url_str
-        assert "mapping_types=MAPS+TO%2CIS+A" in url_str
-        assert "direction=outgoing" in url_str
-        assert "include_indirect=true" in url_str
-        assert "standard_only=true" in url_str
-        assert "include_mapping_quality=true" in url_str
-        assert "include_synonyms=true" in url_str
-        assert "include_context=true" in url_str
-        assert "active_only=false" in url_str
-        assert "sort_by=mapping_type" in url_str
-        assert "sort_order=asc" in url_str
+        assert "target_vocabulary=ICD10CM" in url_str
+        assert "include_invalid=true" in url_str
 
     @respx.mock
     def test_map_concepts(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -158,7 +138,7 @@ class TestAsyncMappingsResource:
     async def test_async_get_mappings_with_filters(
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
-        """Test async mappings with all filters."""
+        """Test async mappings with filters."""
         route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"mappings": []}}
@@ -167,23 +147,13 @@ class TestAsyncMappingsResource:
 
         await async_client.mappings.get(
             201826,
-            target_vocabularies=["ICD10CM"],
-            mapping_types=["MAPS TO"],
-            direction="both",
-            include_indirect=True,
-            standard_only=True,
-            include_mapping_quality=True,
-            include_synonyms=True,
-            include_context=True,
-            active_only=False,
-            sort_by="target_vocabulary",
-            sort_order="desc",
+            target_vocabulary="ICD10CM",
+            include_invalid=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "target_vocabularies=ICD10CM" in url_str
-        assert "include_indirect=true" in url_str
-        assert "active_only=false" in url_str
+        assert "target_vocabulary=ICD10CM" in url_str
+        assert "include_invalid=true" in url_str
 
     @pytest.mark.asyncio
     @respx.mock

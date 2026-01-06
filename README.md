@@ -51,7 +51,7 @@ for c in results["concepts"]:
     print(f"{c['concept_id']}: {c['concept_name']}")
 
 # Map ICD-10 code to SNOMED
-mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabularies=["SNOMED"])
+mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabulary="SNOMED")
 
 # Navigate concept hierarchy
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
@@ -82,8 +82,8 @@ Validate and map clinical codes during OMOP CDM transformations:
 def validate_and_map(source_vocab, source_code):
     concept = client.concepts.get_by_code(source_vocab, source_code)
     if concept["standard_concept"] != "S":
-        mappings = client.mappings.get(concept["concept_id"], 
-                                        target_vocabularies=["SNOMED"])
+        mappings = client.mappings.get(concept["concept_id"],
+                                        target_vocabulary="SNOMED")
         return mappings["mappings"][0]["target_concept_id"]
     return concept["concept_id"]
 ```
@@ -109,7 +109,7 @@ Explore hierarchies to build comprehensive concept sets:
 
 ```python
 # Get all descendants of "Type 2 diabetes mellitus" for phenotype
-descendants = client.hierarchy.descendants(201826, max_levels=5, standard_only=True)
+descendants = client.hierarchy.descendants(201826, max_levels=5)
 concept_set = [d["concept_id"] for d in descendants["concepts"]]
 print(f"Found {len(concept_set)} concepts for T2DM phenotype")
 ```
@@ -120,7 +120,7 @@ Build terminology lookups into healthcare applications:
 
 ```python
 # Autocomplete for clinical coding interface
-suggestions = client.concepts.suggest("diab", vocabulary="SNOMED", limit=10)
+suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_size=10)
 # Returns: ["Diabetes mellitus", "Diabetic nephropathy", "Diabetic retinopathy", ...]
 ```
 

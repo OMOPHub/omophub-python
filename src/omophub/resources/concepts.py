@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypedDict
 if TYPE_CHECKING:
     from .._request import AsyncRequest, Request
     from ..types.concept import BatchConceptResult, Concept
-    from ..types.search import Suggestion
 
 
 class GetConceptParams(TypedDict, total=False):

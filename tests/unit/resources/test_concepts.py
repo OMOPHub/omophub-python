@@ -137,15 +137,15 @@ class TestConceptsResource:
 
         sync_client.concepts.suggest(
             "diabetes",
-            vocabulary="SNOMED",
-            domain="Condition",
-            limit=20,
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            page_size=20,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary=SNOMED" in url_str
-        assert "domain=Condition" in url_str
-        assert "limit=20" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
+        assert "domain_ids=Condition" in url_str
+        assert "page_size=20" in url_str
 
     @respx.mock
     def test_get_related_concepts(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -179,23 +179,15 @@ class TestConceptsResource:
 
         sync_client.concepts.related(
             201826,
-            relatedness_types=["hierarchical", "semantic"],
-            vocabulary_ids=["SNOMED"],
-            domain_ids=["Condition"],
-            min_relatedness_score=0.5,
-            max_results=100,
-            include_scores=False,
-            standard_concepts_only=True,
+            relationship_types=["Is a", "Maps to"],
+            min_score=0.5,
+            page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "relatedness_types=hierarchical%2Csemantic" in url_str
-        assert "vocabulary_ids=SNOMED" in url_str
-        assert "domain_ids=Condition" in url_str
-        assert "min_relatedness_score=0.5" in url_str
-        assert "max_results=100" in url_str
-        assert "include_scores=false" in url_str
-        assert "standard_concepts_only=true" in url_str
+        assert "relationship_types=Is+a%2CMaps+to" in url_str
+        assert "min_score=0.5" in url_str
+        assert "page_size=100" in url_str
 
     @respx.mock
     def test_get_concept_relationships(
@@ -230,20 +222,16 @@ class TestConceptsResource:
 
         sync_client.concepts.relationships(
             201826,
-            relationship_type="Is a",
-            target_vocabulary="SNOMED",
+            relationship_ids="Is a",
+            vocabulary_ids="SNOMED",
             include_invalid=True,
-            page=2,
-            page_size=50,
         )
 
         url_str = str(route.calls[0].request.url)
         # All params use snake_case to match API standards
-        assert "relationship_type=Is+a" in url_str
-        assert "target_vocabulary=SNOMED" in url_str
+        assert "relationship_ids=Is+a" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "include_invalid=true" in url_str
-        assert "page=2" in url_str
-        assert "page_size=50" in url_str
 
 
 class TestAsyncConceptsResource:
@@ -369,15 +357,15 @@ class TestAsyncConceptsResource:
 
         await async_client.concepts.suggest(
             "aspirin",
-            vocabulary="SNOMED",
-            domain="Drug",
-            limit=5,
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Drug"],
+            page_size=5,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary=SNOMED" in url_str
-        assert "domain=Drug" in url_str
-        assert "limit=5" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
+        assert "domain_ids=Drug" in url_str
+        assert "page_size=5" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -408,20 +396,15 @@ class TestAsyncConceptsResource:
 
         await async_client.concepts.related(
             201826,
-            relatedness_types=["semantic"],
-            vocabulary_ids=["SNOMED"],
-            domain_ids=["Condition"],
-            min_relatedness_score=0.7,
-            max_results=25,
-            include_scores=True,
-            standard_concepts_only=True,
+            relationship_types=["Is a"],
+            min_score=0.7,
+            page_size=25,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "relatedness_types=semantic" in url_str
-        assert "vocabulary_ids=SNOMED" in url_str
-        assert "min_relatedness_score=0.7" in url_str
-        assert "standard_concepts_only=true" in url_str
+        assert "relationship_types=Is+a" in url_str
+        assert "min_score=0.7" in url_str
+        assert "page_size=25" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -452,14 +435,12 @@ class TestAsyncConceptsResource:
 
         await async_client.concepts.relationships(
             201826,
-            relationship_type="Maps to",
-            target_vocabulary="ICD10CM",
+            relationship_ids="Maps to",
+            vocabulary_ids="ICD10CM",
             include_invalid=True,
-            page=1,
-            page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "relationship_type=Maps+to" in url_str
-        assert "target_vocabulary=ICD10CM" in url_str
+        assert "relationship_ids=Maps+to" in url_str
+        assert "vocabulary_ids=ICD10CM" in url_str
         assert "include_invalid=true" in url_str

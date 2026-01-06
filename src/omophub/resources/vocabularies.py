@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    import builtins
-
     from .._request import AsyncRequest, Request
     from ..types.vocabulary import Vocabulary, VocabularyStats
 
