@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-06
+
+### Changes
+
+**Parameter Renames (for API consistency):**
+- `search.autocomplete()`: `max_suggestions` → `page_size`
+- `concepts.suggest()`: `vocabulary` → `vocabulary_ids`, `domain` → `domain_ids`, `limit` → `page_size`
+- `concepts.related()`: `relatedness_types` → `relationship_types`
+- `concepts.relationships()`: `relationship_type` → `relationship_ids`
+- `relationships.get()`: `relationship_type` → `relationship_ids`, `target_vocabulary` → `vocabulary_ids`
+- `hierarchy.ancestors()`: `vocabulary_id` → `vocabulary_ids`, `include_deprecated` → `include_invalid`
+- `hierarchy.descendants()`: `vocabulary_id` → `vocabulary_ids`, `include_deprecated` → `include_invalid`
+
+**Simplified APIs (removed parameters):**
+- `vocabularies.get()`: Removed `include_stats`, `include_domains` (use `stats()` method instead)
+- `vocabularies.domains()`: Removed pagination parameters, now returns all domains
+- `domains.list()`: Simplified to single `include_stats` parameter
+- `domains.concepts()`: Removed `concept_class_ids`, added `include_invalid`
+- `mappings.get()`: Simplified to `target_vocabulary`, `include_invalid`, `vocab_release`
+- `relationships.types()`: Removed all filtering parameters
+
+**Default Changes:**
+- `vocabularies.list()`: Default `page_size` changed from 100 to 20
+- `concepts.batch()`: Default `standard_only` changed from `False` to `True`
+
+### Added
+
+- `vocabularies.domain_stats(vocabulary_id, domain_id)` - Get statistics for a specific domain within a vocabulary
+- `vocabularies.concept_classes()` - Get all concept classes
+- `hierarchy.get(concept_id)` - Get complete hierarchy (ancestors and descendants) in one call
+- `vocab_release` parameter to `concepts.get()`, `concepts.get_by_code()`, `mappings.get()`, `mappings.map()`
+- `include_hierarchy` parameter to `concepts.get()` and `concepts.get_by_code()`
+- Pagination support to `concepts.suggest()`
+- `domain_ids`, `standard_only`, `include_reverse` parameters to `relationships.get()`
+
 ## [1.2.0] - 2025-12-09
 
 ### Added
@@ -37,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/omopHub/omophub-python/compare/v0.1.0...v0.2.0
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/omopHub/omophub-python/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/omopHub/omophub-python/compare/v0.1.0...v1.2.0
 [0.1.0]: https://github.com/omopHub/omophub-python/releases/tag/v0.1.0

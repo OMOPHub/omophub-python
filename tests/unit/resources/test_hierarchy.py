@@ -47,25 +47,23 @@ class TestHierarchyResource:
 
         sync_client.hierarchy.ancestors(
             201826,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=5,
             relationship_types=["Is a", "Subsumes"],
             include_paths=True,
             include_distance=True,
-            standard_only=True,
-            include_deprecated=True,
+            include_invalid=True,
             page=2,
             page_size=50,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=5" in url_str
         assert "relationship_types=Is+a%2CSubsumes" in url_str
         assert "include_paths=true" in url_str
         assert "include_distance=true" in url_str
-        assert "standard_only=true" in url_str
-        assert "include_deprecated=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "page=2" in url_str
         assert "page_size=50" in url_str
 
@@ -101,28 +99,25 @@ class TestHierarchyResource:
 
         sync_client.hierarchy.descendants(
             201820,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=3,
             relationship_types=["Is a"],
             include_distance=True,
-            standard_only=True,
-            include_deprecated=True,
+            include_paths=True,
+            include_invalid=True,
             domain_ids=["Condition"],
-            concept_class_ids=["Clinical Finding"],
-            include_synonyms=True,
             page=1,
             page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=3" in url_str
         assert "relationship_types=Is+a" in url_str
         assert "include_distance=true" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_paths=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "domain_ids=Condition" in url_str
-        assert "concept_class_ids=Clinical+Finding" in url_str
-        assert "include_synonyms=true" in url_str
         assert "page=1" in url_str
         assert "page_size=100" in url_str
 
@@ -130,18 +125,18 @@ class TestHierarchyResource:
     def test_get_descendants_max_levels_capped(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
-        """Test that max_levels is capped at 10."""
+        """Test that max_levels is capped at 20."""
         route = respx.get(f"{base_url}/concepts/201820/descendants").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"descendants": []}}
             )
         )
 
-        # Request max_levels=50, should be capped to 10
+        # Request max_levels=50, should be capped to 20
         sync_client.hierarchy.descendants(201820, max_levels=50)
 
         url_str = str(route.calls[0].request.url)
-        assert "max_levels=10" in url_str
+        assert "max_levels=20" in url_str
 
 
 
@@ -177,19 +172,19 @@ class TestAsyncHierarchyResource:
 
         await async_client.hierarchy.ancestors(
             201826,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=3,
             relationship_types=["Is a"],
             include_paths=True,
-            standard_only=True,
+            include_invalid=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=3" in url_str
         assert "include_paths=true" in url_str
         assert "relationship_types=Is+a" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -220,19 +215,17 @@ class TestAsyncHierarchyResource:
 
         await async_client.hierarchy.descendants(
             201820,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=5,
             domain_ids=["Condition"],
-            concept_class_ids=["Clinical Finding"],
-            standard_only=True,
-            include_synonyms=True,
+            include_invalid=True,
+            include_paths=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "domain_ids=Condition" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "max_levels=5" in url_str
-        assert "concept_class_ids=Clinical+Finding" in url_str or "concept_class_ids=Clinical%20Finding" in url_str
-        assert "include_synonyms=true" in url_str
+        assert "include_paths=true" in url_str
 

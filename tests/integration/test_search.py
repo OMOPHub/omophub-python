@@ -53,7 +53,7 @@ class TestSearchIntegration:
         """Test autocomplete suggestions."""
         result = integration_client.search.autocomplete(
             "diab",
-            max_suggestions=10,
+            page_size=10,
         )
 
         suggestions = extract_data(result, "suggestions")
@@ -76,7 +76,7 @@ class TestSearchIntegration:
             "hyper",
             vocabulary_ids=["SNOMED"],
             domains=["Condition"],
-            max_suggestions=5,
+            page_size=5,
         )
 
         suggestions = extract_data(result, "suggestions")

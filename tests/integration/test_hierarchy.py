@@ -37,7 +37,7 @@ class TestHierarchyIntegration:
         """Get ancestors with various options."""
         result = integration_client.hierarchy.ancestors(
             DIABETES_CONCEPT_ID,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=5,
             include_distance=True,
             page_size=50,
@@ -45,6 +45,11 @@ class TestHierarchyIntegration:
 
         ancestors = result.get("ancestors", result)
         assert isinstance(ancestors, list)
+
+        # Verify hierarchy_summary structure if present
+        if "hierarchy_summary" in result:
+            summary = result["hierarchy_summary"]
+            assert "max_hierarchy_depth" in summary or "total_ancestors" in summary
 
     def test_get_descendants(self, integration_client: OMOPHub) -> None:
         """Get descendants of a parent concept."""
@@ -61,12 +66,17 @@ class TestHierarchyIntegration:
         """Get descendants with domain and vocabulary filters."""
         result = integration_client.hierarchy.descendants(
             201820,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=3,
             include_distance=True,
-            standard_only=True,
+            include_invalid=False,
             page_size=100,
         )
 
         descendants = result.get("descendants", result)
         assert isinstance(descendants, list)
+
+        # Verify hierarchy_summary structure if present
+        if "hierarchy_summary" in result:
+            summary = result["hierarchy_summary"]
+            assert "max_hierarchy_depth" in summary or "total_descendants" in summary

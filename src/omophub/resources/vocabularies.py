@@ -25,7 +25,7 @@ class Vocabularies:
         sort_by: str = "name",
         sort_order: str = "asc",
         page: int = 1,
-        page_size: int = 100,
+        page_size: int = 20,
     ) -> dict[str, Any]:
         """List all vocabularies.
 
@@ -53,32 +53,17 @@ class Vocabularies:
 
         return self._request.get("/vocabularies", params=params)
 
-    def get(
-        self,
-        vocabulary_id: str,
-        *,
-        include_stats: bool = False,
-        include_domains: bool = False,
-    ) -> Vocabulary:
+    def get(self, vocabulary_id: str) -> Vocabulary:
         """Get vocabulary details.
 
         Args:
             vocabulary_id: The vocabulary ID
-            include_stats: Include statistics
-            include_domains: Include domain breakdown
 
         Returns:
-            Vocabulary details
+            Vocabulary details including vocabulary_id, vocabulary_name,
+            vocabulary_reference, vocabulary_version, vocabulary_concept_id
         """
-        params: dict[str, Any] = {}
-        if include_stats:
-            params["include_stats"] = "true"
-        if include_domains:
-            params["include_domains"] = "true"
-
-        return self._request.get(
-            f"/vocabularies/{vocabulary_id}", params=params or None
-        )
+        return self._request.get(f"/vocabularies/{vocabulary_id}")
 
     def stats(self, vocabulary_id: str) -> VocabularyStats:
         """Get vocabulary statistics.
@@ -91,58 +76,83 @@ class Vocabularies:
         """
         return self._request.get(f"/vocabularies/{vocabulary_id}/stats")
 
-    def domains(
-        self,
-        *,
-        vocabulary_ids: builtins.list[str] | None = None,
-        page: int = 1,
-        page_size: int = 50,
-    ) -> dict[str, Any]:
-        """Get vocabulary domains.
+    def domain_stats(self, vocabulary_id: str, domain_id: str) -> dict[str, Any]:
+        """Get statistics for a specific domain within a vocabulary.
 
         Args:
-            vocabulary_ids: Filter by vocabulary IDs (optional)
-            page: Page number
-            page_size: Results per page
+            vocabulary_id: The vocabulary ID (e.g., "SNOMED", "ICD10CM")
+            domain_id: The domain ID (e.g., "Condition", "Drug", "Procedure")
 
         Returns:
-            Domain statistics for vocabularies
+            Domain statistics including concept counts and class breakdown
         """
-        params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        return self._request.get("/vocabularies/domains", params=params)
+        return self._request.get(
+            f"/vocabularies/{vocabulary_id}/stats/domains/{domain_id}"
+        )
+
+    def domains(self) -> dict[str, Any]:
+        """Get all standard OHDSI domains.
+
+        Returns:
+            List of all available domains with domain_id, domain_name, and description
+        """
+        return self._request.get("/vocabularies/domains")
+
+    def concept_classes(self) -> dict[str, Any]:
+        """Get all concept classes.
+
+        Returns:
+            List of all available concept classes with concept_class_id,
+            concept_class_name, and concept_class_concept_id
+        """
+        return self._request.get("/vocabularies/concept-classes")
 
     def concepts(
         self,
         vocabulary_id: str,
         *,
-        domain_id: str | None = None,
-        concept_class_id: str | None = None,
-        standard_only: bool = False,
+        search: str | None = None,
+        standard_concept: str = "all",
+        include_invalid: bool = False,
+        include_relationships: bool = False,
+        include_synonyms: bool = False,
+        sort_by: str = "name",
+        sort_order: str = "asc",
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 20,
     ) -> dict[str, Any]:
         """Get concepts in a vocabulary.
 
         Args:
             vocabulary_id: The vocabulary ID
-            domain_id: Filter by domain
-            concept_class_id: Filter by concept class
-            standard_only: Only standard concepts
+            search: Search term to filter concepts by name or code
+            standard_concept: Filter by standard concept status ('S', 'C', 'all')
+            include_invalid: Include invalid or deprecated concepts
+            include_relationships: Include concept relationships
+            include_synonyms: Include concept synonyms
+            sort_by: Sort field ('name', 'concept_id', 'concept_code')
+            sort_order: Sort order ('asc' or 'desc')
             page: Page number
-            page_size: Results per page
+            page_size: Results per page (max 1000)
 
         Returns:
             Paginated concepts
         """
-        params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if domain_id:
-            params["domain_id"] = domain_id
-        if concept_class_id:
-            params["concept_class_id"] = concept_class_id
-        if standard_only:
-            params["standard_only"] = "true"
+        params: dict[str, Any] = {
+            "page": page,
+            "page_size": page_size,
+            "standard_concept": standard_concept,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+        }
+        if search:
+            params["search"] = search
+        if include_invalid:
+            params["include_invalid"] = "true"
+        if include_relationships:
+            params["include_relationships"] = "true"
+        if include_synonyms:
+            params["include_synonyms"] = "true"
 
         return self._request.get(
             f"/vocabularies/{vocabulary_id}/concepts", params=params
@@ -163,7 +173,7 @@ class AsyncVocabularies:
         sort_by: str = "name",
         sort_order: str = "asc",
         page: int = 1,
-        page_size: int = 100,
+        page_size: int = 20,
     ) -> dict[str, Any]:
         """List all vocabularies."""
         params: dict[str, Any] = {
@@ -179,59 +189,58 @@ class AsyncVocabularies:
 
         return await self._request.get("/vocabularies", params=params)
 
-    async def get(
-        self,
-        vocabulary_id: str,
-        *,
-        include_stats: bool = False,
-        include_domains: bool = False,
-    ) -> Vocabulary:
+    async def get(self, vocabulary_id: str) -> Vocabulary:
         """Get vocabulary details."""
-        params: dict[str, Any] = {}
-        if include_stats:
-            params["include_stats"] = "true"
-        if include_domains:
-            params["include_domains"] = "true"
-
-        return await self._request.get(
-            f"/vocabularies/{vocabulary_id}", params=params or None
-        )
+        return await self._request.get(f"/vocabularies/{vocabulary_id}")
 
     async def stats(self, vocabulary_id: str) -> VocabularyStats:
         """Get vocabulary statistics."""
         return await self._request.get(f"/vocabularies/{vocabulary_id}/stats")
 
-    async def domains(
-        self,
-        *,
-        vocabulary_ids: builtins.list[str] | None = None,
-        page: int = 1,
-        page_size: int = 50,
-    ) -> dict[str, Any]:
-        """Get vocabulary domains."""
-        params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        return await self._request.get("/vocabularies/domains", params=params)
+    async def domain_stats(self, vocabulary_id: str, domain_id: str) -> dict[str, Any]:
+        """Get statistics for a specific domain within a vocabulary."""
+        return await self._request.get(
+            f"/vocabularies/{vocabulary_id}/stats/domains/{domain_id}"
+        )
+
+    async def domains(self) -> dict[str, Any]:
+        """Get all standard OHDSI domains."""
+        return await self._request.get("/vocabularies/domains")
+
+    async def concept_classes(self) -> dict[str, Any]:
+        """Get all concept classes."""
+        return await self._request.get("/vocabularies/concept-classes")
 
     async def concepts(
         self,
         vocabulary_id: str,
         *,
-        domain_id: str | None = None,
-        concept_class_id: str | None = None,
-        standard_only: bool = False,
+        search: str | None = None,
+        standard_concept: str = "all",
+        include_invalid: bool = False,
+        include_relationships: bool = False,
+        include_synonyms: bool = False,
+        sort_by: str = "name",
+        sort_order: str = "asc",
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 20,
     ) -> dict[str, Any]:
         """Get concepts in a vocabulary."""
-        params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if domain_id:
-            params["domain_id"] = domain_id
-        if concept_class_id:
-            params["concept_class_id"] = concept_class_id
-        if standard_only:
-            params["standard_only"] = "true"
+        params: dict[str, Any] = {
+            "page": page,
+            "page_size": page_size,
+            "standard_concept": standard_concept,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+        }
+        if search:
+            params["search"] = search
+        if include_invalid:
+            params["include_invalid"] = "true"
+        if include_relationships:
+            params["include_relationships"] = "true"
+        if include_synonyms:
+            params["include_synonyms"] = "true"
 
         return await self._request.get(
             f"/vocabularies/{vocabulary_id}/concepts", params=params

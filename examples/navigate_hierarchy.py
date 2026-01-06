@@ -40,7 +40,7 @@ def get_descendants() -> None:
     result = client.hierarchy.descendants(
         concept_id,
         max_levels=2,
-        standard_only=True,
+        include_invalid=False,
     )
 
     concept = result.get("concept", {})

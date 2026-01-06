@@ -174,17 +174,25 @@ class TestVocabulariesResource:
 
         sync_client.vocabularies.concepts(
             "SNOMED",
-            domain_id="Condition",
-            concept_class_id="Clinical Finding",
-            standard_only=True,
+            search="diabetes",
+            standard_concept="S",
+            include_invalid=True,
+            include_relationships=True,
+            include_synonyms=True,
+            sort_by="concept_id",
+            sort_order="desc",
             page=1,
             page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "domain_id=Condition" in url_str
-        assert "concept_class_id=Clinical+Finding" in url_str
-        assert "standard_only=true" in url_str
+        assert "search=diabetes" in url_str
+        assert "standard_concept=S" in url_str
+        assert "include_invalid=true" in url_str
+        assert "include_relationships=true" in url_str
+        assert "include_synonyms=true" in url_str
+        assert "sort_by=concept_id" in url_str
+        assert "sort_order=desc" in url_str
 
 
 class TestAsyncVocabulariesResource:
@@ -321,14 +329,20 @@ class TestAsyncVocabulariesResource:
 
         await async_client.vocabularies.concepts(
             "SNOMED",
-            domain_id="Drug",
-            concept_class_id="Ingredient",
-            standard_only=True,
+            search="aspirin",
+            standard_concept="S",
+            include_invalid=True,
+            include_relationships=True,
+            include_synonyms=True,
+            sort_by="name",
+            sort_order="asc",
             page=1,
             page_size=50,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "domain_id=Drug" in url_str
-        assert "concept_class_id=Ingredient" in url_str
-        assert "standard_only=true" in url_str
+        assert "search=aspirin" in url_str
+        assert "standard_concept=S" in url_str
+        assert "include_invalid=true" in url_str
+        assert "include_relationships=true" in url_str
+        assert "include_synonyms=true" in url_str

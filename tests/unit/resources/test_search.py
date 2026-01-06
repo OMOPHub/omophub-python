@@ -131,7 +131,7 @@ class TestSearchResource:
     @respx.mock
     def test_advanced_search(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test advanced search with POST body."""
-        route = respx.post(f"{base_url}/concepts/search/advanced").mock(
+        route = respx.post(f"{base_url}/search/advanced").mock(
             return_value=Response(
                 200,
                 json={
@@ -143,14 +143,14 @@ class TestSearchResource:
 
         sync_client.search.advanced(
             "myocardial infarction",
-            vocabularies=["SNOMED"],
-            domains=["Condition"],
-            concept_classes=["Clinical Finding"],
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            concept_class_ids=["Clinical Finding"],
             standard_concepts_only=True,
             include_invalid=True,
             relationship_filters=[{"type": "Is a", "concept_id": 123}],
-            limit=50,
-            offset=10,
+            page=2,
+            page_size=50,
         )
 
         # Verify POST body was sent
@@ -174,7 +174,7 @@ class TestSearchResource:
             "diab",
             vocabulary_ids=["SNOMED"],
             domains=["Condition"],
-            max_suggestions=5,
+            page_size=5,
         )
 
         assert len(result) == 2
@@ -182,7 +182,7 @@ class TestSearchResource:
         assert "query=diab" in url_str
         assert "vocabulary_ids=SNOMED" in url_str
         assert "domains=Condition" in url_str
-        assert "max_suggestions=5" in url_str
+        assert "page_size=5" in url_str
 
 
 class TestAsyncSearchResource:
@@ -247,7 +247,7 @@ class TestAsyncSearchResource:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async advanced search."""
-        respx.post(f"{base_url}/concepts/search/advanced").mock(
+        respx.post(f"{base_url}/search/advanced").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"concepts": []}}
             )
@@ -255,8 +255,8 @@ class TestAsyncSearchResource:
 
         result = await async_client.search.advanced(
             "heart attack",
-            vocabularies=["SNOMED", "ICD10CM"],
-            domains=["Condition"],
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
             standard_concepts_only=True,
         )
 

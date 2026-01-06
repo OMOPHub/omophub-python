@@ -18,80 +18,63 @@ class Relationships:
         self,
         concept_id: int,
         *,
-        relationship_type: str | None = None,
-        target_vocabulary: str | None = None,
+        relationship_ids: list[str] | None = None,
+        vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
+        standard_only: bool = False,
         include_invalid: bool = False,
+        include_reverse: bool = False,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 100,
     ) -> dict[str, Any]:
         """Get relationships for a concept.
 
         Args:
             concept_id: The concept ID
-            relationship_type: Filter by relationship type
-            target_vocabulary: Filter by target vocabulary
+            relationship_ids: Filter by relationship IDs (e.g., ["Is a", "Maps to"])
+            vocabulary_ids: Filter by vocabulary IDs
+            domain_ids: Filter by domain IDs
+            standard_only: Only include relationships to standard concepts
             include_invalid: Include invalid relationships
+            include_reverse: Include reverse relationships
             page: Page number
-            page_size: Results per page
+            page_size: Results per page (max 1000)
 
         Returns:
-            Relationships with summary
+            Relationships with pagination metadata
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if relationship_type:
-            params["relationship_type"] = relationship_type
-        if target_vocabulary:
-            params["target_vocabulary"] = target_vocabulary
+        if relationship_ids:
+            params["relationship_ids"] = ",".join(relationship_ids)
+        if vocabulary_ids:
+            params["vocabulary_ids"] = ",".join(vocabulary_ids)
+        if domain_ids:
+            params["domain_ids"] = ",".join(domain_ids)
+        if standard_only:
+            params["standard_only"] = "true"
         if include_invalid:
             params["include_invalid"] = "true"
+        if include_reverse:
+            params["include_reverse"] = "true"
 
         return self._request.get(f"/concepts/{concept_id}/relationships", params=params)
 
     def types(
         self,
         *,
-        vocabulary_ids: list[str] | None = None,
-        include_reverse: bool = False,
-        include_usage_stats: bool = False,
-        include_examples: bool = False,
-        category: str | None = None,
-        is_defining: bool | None = None,
-        standard_only: bool = False,
         page: int = 1,
         page_size: int = 100,
     ) -> dict[str, Any]:
-        """Get available relationship types.
+        """Get available relationship types from the OMOP CDM.
 
         Args:
-            vocabulary_ids: Filter by vocabularies
-            include_reverse: Include reverse relationships
-            include_usage_stats: Include usage statistics
-            include_examples: Include example concepts
-            category: Filter by category
-            is_defining: Filter by defining status
-            standard_only: Only standard relationships
-            page: Page number
-            page_size: Results per page
+            page: Page number (1-based)
+            page_size: Results per page (max 500)
 
         Returns:
-            Relationship types with metadata
+            Relationship types with pagination metadata
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if include_reverse:
-            params["include_reverse"] = "true"
-        if include_usage_stats:
-            params["include_usage_stats"] = "true"
-        if include_examples:
-            params["include_examples"] = "true"
-        if category:
-            params["category"] = category
-        if is_defining is not None:
-            params["is_defining"] = "true" if is_defining else "false"
-        if standard_only:
-            params["standard_only"] = "true"
-
         return self._request.get("/relationships/types", params=params)
 
 
@@ -105,32 +88,44 @@ class AsyncRelationships:
         self,
         concept_id: int,
         *,
-        relationship_type: str | None = None,
-        target_vocabulary: str | None = None,
+        relationship_ids: list[str] | None = None,
+        vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
+        standard_only: bool = False,
         include_invalid: bool = False,
+        include_reverse: bool = False,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 100,
     ) -> dict[str, Any]:
         """Get relationships for a concept.
 
         Args:
             concept_id: The concept ID
-            relationship_type: Filter by relationship type
-            target_vocabulary: Filter by target vocabulary
+            relationship_ids: Filter by relationship IDs (e.g., ["Is a", "Maps to"])
+            vocabulary_ids: Filter by vocabulary IDs
+            domain_ids: Filter by domain IDs
+            standard_only: Only include relationships to standard concepts
             include_invalid: Include invalid relationships
+            include_reverse: Include reverse relationships
             page: Page number
-            page_size: Results per page
+            page_size: Results per page (max 1000)
 
         Returns:
-            Relationships with summary
+            Relationships with pagination metadata
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if relationship_type:
-            params["relationship_type"] = relationship_type
-        if target_vocabulary:
-            params["target_vocabulary"] = target_vocabulary
+        if relationship_ids:
+            params["relationship_ids"] = ",".join(relationship_ids)
+        if vocabulary_ids:
+            params["vocabulary_ids"] = ",".join(vocabulary_ids)
+        if domain_ids:
+            params["domain_ids"] = ",".join(domain_ids)
+        if standard_only:
+            params["standard_only"] = "true"
         if include_invalid:
             params["include_invalid"] = "true"
+        if include_reverse:
+            params["include_reverse"] = "true"
 
         return await self._request.get(
             f"/concepts/{concept_id}/relationships", params=params
@@ -139,46 +134,17 @@ class AsyncRelationships:
     async def types(
         self,
         *,
-        vocabulary_ids: list[str] | None = None,
-        include_reverse: bool = False,
-        include_usage_stats: bool = False,
-        include_examples: bool = False,
-        category: str | None = None,
-        is_defining: bool | None = None,
-        standard_only: bool = False,
         page: int = 1,
         page_size: int = 100,
     ) -> dict[str, Any]:
-        """Get available relationship types.
+        """Get available relationship types from the OMOP CDM.
 
         Args:
-            vocabulary_ids: Filter by vocabularies
-            include_reverse: Include reverse relationships
-            include_usage_stats: Include usage statistics
-            include_examples: Include example concepts
-            category: Filter by category
-            is_defining: Filter by defining status
-            standard_only: Only standard relationships
-            page: Page number
-            page_size: Results per page
+            page: Page number (1-based)
+            page_size: Results per page (max 500)
 
         Returns:
-            Relationship types with metadata
+            Relationship types with pagination metadata
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if include_reverse:
-            params["include_reverse"] = "true"
-        if include_usage_stats:
-            params["include_usage_stats"] = "true"
-        if include_examples:
-            params["include_examples"] = "true"
-        if category:
-            params["category"] = category
-        if is_defining is not None:
-            params["is_defining"] = "true" if is_defining else "false"
-        if standard_only:
-            params["standard_only"] = "true"
-
         return await self._request.get("/relationships/types", params=params)

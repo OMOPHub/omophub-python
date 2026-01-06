@@ -27,7 +27,6 @@ class TestDomainsResource:
                     {"domain_id": "Drug", "domain_name": "Drug"},
                     {"domain_id": "Procedure", "domain_name": "Procedure"},
                 ],
-                "summary": {"total_domains": 3},
             },
         }
         respx.get(f"{base_url}/domains").mock(
@@ -38,36 +37,51 @@ class TestDomainsResource:
         assert "domains" in result
 
     @respx.mock
-    def test_list_domains_with_options(
+    def test_list_domains_with_stats(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
-        """Test listing domains with all filter options."""
+        """Test listing domains with include_stats option."""
+        route = respx.get(f"{base_url}/domains").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {
+                        "domains": [
+                            {
+                                "domain_id": "Condition",
+                                "domain_name": "Condition",
+                                "concept_count": 845672,
+                                "standard_concept_count": 423891,
+                                "vocabulary_coverage": ["SNOMED", "ICD10CM"],
+                            }
+                        ]
+                    },
+                },
+            )
+        )
+
+        sync_client.domains.list(include_stats=True)
+
+        url_str = str(route.calls[0].request.url)
+        assert "include_stats=true" in url_str
+
+    @respx.mock
+    def test_list_domains_without_stats(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test listing domains without stats (default)."""
         route = respx.get(f"{base_url}/domains").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"domains": []}}
             )
         )
 
-        sync_client.domains.list(
-            vocabulary_ids=["SNOMED", "ICD10CM"],
-            include_concept_counts=True,
-            include_statistics=True,
-            include_examples=True,
-            standard_only=True,
-            active_only=False,
-            sort_by="concept_count",
-            sort_order="desc",
-        )
+        sync_client.domains.list()
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_ids=SNOMED%2CICD10CM" in url_str
-        assert "include_concept_counts=true" in url_str
-        assert "include_statistics=true" in url_str
-        assert "include_examples=true" in url_str
-        assert "standard_only=true" in url_str
-        assert "active_only=false" in url_str
-        assert "sort_by=concept_count" in url_str
-        assert "sort_order=desc" in url_str
+        # Should not include include_stats when False (default)
+        assert "include_stats" not in url_str
 
     @respx.mock
     def test_get_domain_concepts(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -89,8 +103,8 @@ class TestDomainsResource:
         result = sync_client.domains.concepts(
             "Condition",
             vocabulary_ids=["SNOMED"],
-            concept_class_ids=["Clinical Finding"],
             standard_only=True,
+            include_invalid=True,
             page=1,
             page_size=100,
         )
@@ -98,8 +112,8 @@ class TestDomainsResource:
         assert "concepts" in result
         url_str = str(route.calls[0].request.url)
         assert "vocabulary_ids=SNOMED" in url_str
-        assert "concept_class_ids=Clinical+Finding" in url_str
         assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "page=1" in url_str
         assert "page_size=100" in url_str
 
@@ -124,36 +138,20 @@ class TestAsyncDomainsResource:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_async_list_domains_with_options(
+    async def test_async_list_domains_with_stats(
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
-        """Test async listing domains with all options."""
+        """Test async listing domains with include_stats."""
         route = respx.get(f"{base_url}/domains").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"domains": []}}
             )
         )
 
-        await async_client.domains.list(
-            vocabulary_ids=["SNOMED"],
-            include_concept_counts=True,
-            include_statistics=True,
-            include_examples=True,
-            standard_only=True,
-            active_only=False,
-            sort_by="domain_id",
-            sort_order="asc",
-        )
+        await async_client.domains.list(include_stats=True)
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_ids=SNOMED" in url_str
-        assert "include_concept_counts=true" in url_str
-        assert "include_statistics=true" in url_str
-        assert "include_examples=true" in url_str
-        assert "active_only=false" in url_str
-        assert "standard_only=true" in url_str
-        assert "sort_by=domain_id" in url_str
-        assert "sort_order=asc" in url_str
+        assert "include_stats=true" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -170,15 +168,15 @@ class TestAsyncDomainsResource:
         await async_client.domains.concepts(
             "Condition",
             vocabulary_ids=["SNOMED", "ICD10CM"],
-            concept_class_ids=["Clinical Finding", "Disease"],
             standard_only=True,
+            include_invalid=True,
             page=2,
             page_size=25,
         )
 
         url_str = str(route.calls[0].request.url)
         assert "vocabulary_ids=SNOMED%2CICD10CM" in url_str
-        assert "concept_class_ids=Clinical+Finding%2CDisease" in url_str
         assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "page=2" in url_str
         assert "page_size=25" in url_str

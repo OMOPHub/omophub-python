@@ -37,15 +37,15 @@ class AdvancedSearchParams(TypedDict, total=False):
     """Parameters for advanced search."""
 
     query: str
-    vocabularies: list[str]
-    domains: list[str]
-    concept_classes: list[str]
+    vocabulary_ids: list[str]
+    domain_ids: list[str]
+    concept_class_ids: list[str]
     standard_concepts_only: bool
     include_invalid: bool
     relationship_filters: list[dict[str, Any]]
     date_range: dict[str, str]
-    limit: int
-    offset: int
+    page: int
+    page_size: int
 
 
 class Search:
@@ -168,50 +168,50 @@ class Search:
         self,
         query: str,
         *,
-        vocabularies: list[str] | None = None,
-        domains: list[str] | None = None,
-        concept_classes: list[str] | None = None,
+        vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
+        concept_class_ids: list[str] | None = None,
         standard_concepts_only: bool = False,
         include_invalid: bool = False,
         relationship_filters: list[dict[str, Any]] | None = None,
-        limit: int = 20,
-        offset: int = 0,
+        page: int = 1,
+        page_size: int = 20,
     ) -> SearchResult:
         """Advanced concept search with facets.
 
         Args:
             query: Search query string
-            vocabularies: Filter by vocabularies
-            domains: Filter by domains
-            concept_classes: Filter by concept classes
+            vocabulary_ids: Filter by vocabulary IDs
+            domain_ids: Filter by domain IDs
+            concept_class_ids: Filter by concept class IDs
             standard_concepts_only: Only return standard concepts
             include_invalid: Include invalid concepts
             relationship_filters: Relationship-based filters
-            limit: Maximum results
-            offset: Result offset
+            page: Page number (1-based)
+            page_size: Results per page
 
         Returns:
             Search results with facets and metadata
         """
         body: dict[str, Any] = {"query": query}
-        if vocabularies:
-            body["vocabularies"] = vocabularies
-        if domains:
-            body["domains"] = domains
-        if concept_classes:
-            body["concept_classes"] = concept_classes
+        if vocabulary_ids:
+            body["vocabulary_ids"] = vocabulary_ids
+        if domain_ids:
+            body["domain_ids"] = domain_ids
+        if concept_class_ids:
+            body["concept_class_ids"] = concept_class_ids
         if standard_concepts_only:
             body["standard_concepts_only"] = True
         if include_invalid:
             body["include_invalid"] = True
         if relationship_filters:
             body["relationship_filters"] = relationship_filters
-        if limit != 20:
-            body["limit"] = limit
-        if offset > 0:
-            body["offset"] = offset
+        if page != 1:
+            body["page"] = page
+        if page_size != 20:
+            body["page_size"] = page_size
 
-        return self._request.post("/concepts/search/advanced", json_data=body)
+        return self._request.post("/search/advanced", json_data=body)
 
     def autocomplete(
         self,
@@ -219,7 +219,7 @@ class Search:
         *,
         vocabulary_ids: list[str] | None = None,
         domains: list[str] | None = None,
-        max_suggestions: int = 10,
+        page_size: int = 10,
     ) -> list[Suggestion]:
         """Get autocomplete suggestions.
 
@@ -227,12 +227,12 @@ class Search:
             query: Partial query string
             vocabulary_ids: Filter by vocabulary IDs
             domains: Filter by domains
-            max_suggestions: Maximum suggestions
+            page_size: Maximum suggestions to return
 
         Returns:
             Autocomplete suggestions
         """
-        params: dict[str, Any] = {"query": query, "max_suggestions": max_suggestions}
+        params: dict[str, Any] = {"query": query, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
         if domains:
@@ -297,35 +297,35 @@ class AsyncSearch:
         self,
         query: str,
         *,
-        vocabularies: list[str] | None = None,
-        domains: list[str] | None = None,
-        concept_classes: list[str] | None = None,
+        vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
+        concept_class_ids: list[str] | None = None,
         standard_concepts_only: bool = False,
         include_invalid: bool = False,
         relationship_filters: list[dict[str, Any]] | None = None,
-        limit: int = 20,
-        offset: int = 0,
+        page: int = 1,
+        page_size: int = 20,
     ) -> SearchResult:
         """Advanced concept search with facets."""
         body: dict[str, Any] = {"query": query}
-        if vocabularies:
-            body["vocabularies"] = vocabularies
-        if domains:
-            body["domains"] = domains
-        if concept_classes:
-            body["concept_classes"] = concept_classes
+        if vocabulary_ids:
+            body["vocabulary_ids"] = vocabulary_ids
+        if domain_ids:
+            body["domain_ids"] = domain_ids
+        if concept_class_ids:
+            body["concept_class_ids"] = concept_class_ids
         if standard_concepts_only:
             body["standard_concepts_only"] = True
         if include_invalid:
             body["include_invalid"] = True
         if relationship_filters:
             body["relationship_filters"] = relationship_filters
-        if limit != 20:
-            body["limit"] = limit
-        if offset > 0:
-            body["offset"] = offset
+        if page != 1:
+            body["page"] = page
+        if page_size != 20:
+            body["page_size"] = page_size
 
-        return await self._request.post("/concepts/search/advanced", json_data=body)
+        return await self._request.post("/search/advanced", json_data=body)
 
     async def autocomplete(
         self,
@@ -333,10 +333,10 @@ class AsyncSearch:
         *,
         vocabulary_ids: list[str] | None = None,
         domains: list[str] | None = None,
-        max_suggestions: int = 10,
+        page_size: int = 10,
     ) -> list[Suggestion]:
         """Get autocomplete suggestions."""
-        params: dict[str, Any] = {"query": query, "max_suggestions": max_suggestions}
+        params: dict[str, Any] = {"query": query, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
         if domains:
