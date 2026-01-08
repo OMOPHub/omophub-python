@@ -8,6 +8,7 @@ Access SNOMED CT, ICD-10, RxNorm, LOINC, and 90+ OHDSI ATHENA vocabularies witho
 [![Python Versions](https://img.shields.io/pypi/pyversions/omophub.svg)](https://pypi.org/project/omophub/)
 [![Codecov](https://codecov.io/gh/omopHub/omophub-python/branch/main/graph/badge.svg)](https://app.codecov.io/gh/omopHub/omophub-python?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![Downloads](https://img.shields.io/pypi/dm/omophub)
 
 **[Documentation](https://docs.omophub.com/sdks/python/overview)** ·
 **[API Reference](https://docs.omophub.com/api-reference)** ·
