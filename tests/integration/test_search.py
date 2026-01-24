@@ -49,6 +49,54 @@ class TestSearchIntegration:
         for concept in concepts:
             assert concept.get("domain_id") == "Drug"
 
+    def test_search_with_standard_concept_filter(
+        self, integration_client: OMOPHub
+    ) -> None:
+        """Search for standard concepts only."""
+        results = integration_client.search.basic(
+            "diabetes",
+            standard_concept="S",
+            page_size=20,
+        )
+
+        concepts = extract_data(results, "concepts")
+        assert len(concepts) > 0
+        # All results should be standard concepts
+        for concept in concepts:
+            assert concept.get("standard_concept") == "S"
+
+    def test_search_with_multiple_filters_and_pagination(
+        self, integration_client: OMOPHub
+    ) -> None:
+        """Search with multiple filters to test COUNT query parameter binding.
+
+        This test specifically catches COUNT query bugs where parameter binding
+        differs between the main query and the count query. If the COUNT query
+        fails (like with missing standard_concept parameter), the API would
+        return a 500 error instead of results.
+        """
+        results = integration_client.search.basic(
+            "diabetes",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            page_size=10,
+        )
+
+        # Extract concepts - SDK may return list directly or wrapped in dict
+        concepts = extract_data(results, "concepts")
+        assert len(concepts) > 0, "Expected concepts but got empty result"
+
+        # Verify all filters applied correctly
+        for concept in concepts:
+            assert concept.get("vocabulary_id") == "SNOMED"
+            assert concept.get("domain_id") == "Condition"
+            assert concept.get("standard_concept") == "S"
+
+        # Note: The SDK extracts concepts from the response, so we verify
+        # the COUNT query worked by the fact that we got results without
+        # an error (COUNT query failure would cause HTTP 500)
+
     def test_autocomplete(self, integration_client: OMOPHub) -> None:
         """Test autocomplete suggestions."""
         result = integration_client.search.autocomplete(
