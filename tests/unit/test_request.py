@@ -260,6 +260,83 @@ class TestSyncRequest:
         # Test without leading slash
         assert request._build_url("concepts") == "https://api.example.com/v1/concepts"
 
+    def test_get_raw_request(self, request_handler: Request) -> None:
+        """Test get_raw returns full response with data and meta."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/search").mock(
+                return_value=Response(
+                    200,
+                    json={
+                        "success": True,
+                        "data": {"concepts": [{"concept_id": 1}]},
+                        "meta": {"pagination": {"page": 1, "total_pages": 5}},
+                    },
+                )
+            )
+            result = request_handler.get_raw("/search")
+            assert "data" in result
+            assert "meta" in result
+            assert result["meta"]["pagination"]["page"] == 1
+            assert result["meta"]["pagination"]["total_pages"] == 5
+
+    def test_get_raw_with_params(self, request_handler: Request) -> None:
+        """Test get_raw passes query parameters correctly."""
+        with respx.mock:
+            route = respx.get("https://api.example.com/v1/search").mock(
+                return_value=Response(
+                    200,
+                    json={
+                        "data": {"concepts": []},
+                        "meta": {"pagination": {"page": 2, "has_next": True}},
+                    },
+                )
+            )
+
+            result = request_handler.get_raw("/search", params={"query": "test", "page": 2})
+
+            url_str = str(route.calls[0].request.url)
+            assert "query=test" in url_str
+            assert "page=2" in url_str
+            assert result["meta"]["pagination"]["page"] == 2
+
+    def test_get_raw_error_parsing(self, request_handler: Request) -> None:
+        """Test get_raw raises errors correctly."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(
+                    404,
+                    json={"error": {"message": "Not found"}},
+                    headers={"X-Request-Id": "req_123"},
+                )
+            )
+            with pytest.raises(NotFoundError) as exc_info:
+                request_handler.get_raw("/test")
+            assert exc_info.value.request_id == "req_123"
+
+    def test_get_raw_rate_limit(self, request_handler: Request) -> None:
+        """Test get_raw handles rate limit with retry-after."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(
+                    429,
+                    json={"error": {"message": "Rate limited"}},
+                    headers={"Retry-After": "45"},
+                )
+            )
+            with pytest.raises(RateLimitError) as exc_info:
+                request_handler.get_raw("/test")
+            assert exc_info.value.retry_after == 45
+
+    def test_get_raw_json_decode_error(self, request_handler: Request) -> None:
+        """Test get_raw handles invalid JSON."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(200, content=b"not json")
+            )
+            with pytest.raises(OMOPHubError) as exc_info:
+                request_handler.get_raw("/test")
+            assert "Invalid JSON" in str(exc_info.value)
+
 
 class TestAsyncRequest:
     """Tests for asynchronous AsyncRequest class."""
@@ -407,3 +484,85 @@ class TestAsyncRequest:
                 await request_handler.get("/test")
 
             assert exc_info.value.retry_after == 30
+
+    @pytest.mark.asyncio
+    async def test_async_get_raw_request(self, request_handler: AsyncRequest) -> None:
+        """Test async get_raw returns full response with data and meta."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/search").mock(
+                return_value=Response(
+                    200,
+                    json={
+                        "data": {"concepts": [{"concept_id": 42}]},
+                        "meta": {"pagination": {"page": 1, "has_next": True, "total_pages": 3}},
+                    },
+                )
+            )
+            result = await request_handler.get_raw("/search")
+            assert "data" in result
+            assert "meta" in result
+            assert result["meta"]["pagination"]["page"] == 1
+            assert result["meta"]["pagination"]["has_next"] is True
+
+    @pytest.mark.asyncio
+    async def test_async_get_raw_with_params(self, request_handler: AsyncRequest) -> None:
+        """Test async get_raw passes query parameters correctly."""
+        with respx.mock:
+            route = respx.get("https://api.example.com/v1/search").mock(
+                return_value=Response(
+                    200,
+                    json={
+                        "data": {"concepts": []},
+                        "meta": {"pagination": {"page": 3}},
+                    },
+                )
+            )
+
+            result = await request_handler.get_raw("/search", params={"page": 3})
+
+            url_str = str(route.calls[0].request.url)
+            assert "page=3" in url_str
+            assert result["meta"]["pagination"]["page"] == 3
+
+    @pytest.mark.asyncio
+    async def test_async_get_raw_error(self, request_handler: AsyncRequest) -> None:
+        """Test async get_raw raises errors correctly."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(
+                    404,
+                    json={"error": {"message": "Not found"}},
+                    headers={"X-Request-Id": "req_async_456"},
+                )
+            )
+            with pytest.raises(NotFoundError) as exc_info:
+                await request_handler.get_raw("/test")
+            assert exc_info.value.request_id == "req_async_456"
+
+    @pytest.mark.asyncio
+    async def test_async_get_raw_rate_limit(self, request_handler: AsyncRequest) -> None:
+        """Test async get_raw handles rate limit with retry-after."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(
+                    429,
+                    json={"error": {"message": "Rate limited"}},
+                    headers={"Retry-After": "60"},
+                )
+            )
+            with pytest.raises(RateLimitError) as exc_info:
+                await request_handler.get_raw("/test")
+            assert exc_info.value.retry_after == 60
+
+    @pytest.mark.asyncio
+    async def test_async_get_raw_json_decode_error(
+        self, request_handler: AsyncRequest
+    ) -> None:
+        """Test async get_raw handles invalid JSON."""
+        with respx.mock:
+            respx.get("https://api.example.com/v1/test").mock(
+                return_value=Response(200, content=b"invalid json response")
+            )
+            with pytest.raises(OMOPHubError) as exc_info:
+                await request_handler.get_raw("/test")
+            assert "Invalid JSON" in str(exc_info.value)

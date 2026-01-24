@@ -13,17 +13,12 @@ from omophub import AuthenticationError, OMOPHub
 class TestOMOPHubClient:
     """Tests for the synchronous OMOPHub client."""
 
-    def test_client_requires_api_key(self) -> None:
+    def test_client_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that client raises error without API key."""
-        # Clear any module-level API key
-        original_key = omophub.api_key
-        omophub.api_key = None
+        monkeypatch.setattr("omophub._client.default_api_key", None)
 
-        try:
-            with pytest.raises(AuthenticationError):
-                OMOPHub()
-        finally:
-            omophub.api_key = original_key
+        with pytest.raises(AuthenticationError):
+            OMOPHub()
 
     def test_client_accepts_api_key(self, api_key: str) -> None:
         """Test that client accepts API key parameter."""
@@ -93,16 +88,12 @@ class TestAsyncOMOPHubClient:
         assert hasattr(async_client, "vocabularies")
         assert hasattr(async_client, "domains")
 
-    def test_async_client_requires_api_key(self) -> None:
+    def test_async_client_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that async client raises error without API key."""
-        original_key = omophub.api_key
-        omophub.api_key = None
+        monkeypatch.setattr("omophub._client.default_api_key", None)
 
-        try:
-            with pytest.raises(AuthenticationError):
-                omophub.AsyncOMOPHub()
-        finally:
-            omophub.api_key = original_key
+        with pytest.raises(AuthenticationError):
+            omophub.AsyncOMOPHub()
 
 
 class TestClientLazyPropertyCaching:
