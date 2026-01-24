@@ -77,15 +77,14 @@ class TestSearchResource:
     @respx.mock
     def test_basic_iter_single_page(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test basic_iter with single page of results."""
+        # Note: meta is at top level, not nested inside data
         search_response = {
             "success": True,
-            "data": {
-                "concepts": [
-                    {"concept_id": 201826, "concept_name": "Type 2 diabetes mellitus"},
-                    {"concept_id": 201820, "concept_name": "Diabetes mellitus"},
-                ],
-                "meta": {"pagination": {"page": 1, "has_next": False}},
-            },
+            "data": [
+                {"concept_id": 201826, "concept_name": "Type 2 diabetes mellitus"},
+                {"concept_id": 201820, "concept_name": "Diabetes mellitus"},
+            ],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
         }
         respx.get(f"{base_url}/search/concepts").mock(
             return_value=Response(200, json=search_response)
@@ -99,19 +98,16 @@ class TestSearchResource:
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """Test basic_iter auto-pagination across multiple pages."""
+        # Note: meta is at top level, not nested inside data
         page1_response = {
             "success": True,
-            "data": {
-                "concepts": [{"concept_id": 1}],
-                "meta": {"pagination": {"page": 1, "has_next": True}},
-            },
+            "data": [{"concept_id": 1}],
+            "meta": {"pagination": {"page": 1, "has_next": True}},
         }
         page2_response = {
             "success": True,
-            "data": {
-                "concepts": [{"concept_id": 2}],
-                "meta": {"pagination": {"page": 2, "has_next": False}},
-            },
+            "data": [{"concept_id": 2}],
+            "meta": {"pagination": {"page": 2, "has_next": False}},
         }
 
         call_count = 0

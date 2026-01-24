@@ -125,8 +125,15 @@ class Search:
         *,
         vocabulary_ids: list[str] | None = None,
         domain_ids: list[str] | None = None,
+        concept_class_ids: list[str] | None = None,
+        standard_concept: str | None = None,
+        include_synonyms: bool = False,
+        include_invalid: bool = False,
+        min_score: float | None = None,
+        exact_match: bool = False,
         page_size: int = DEFAULT_PAGE_SIZE,
-        **kwargs: Any,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
     ) -> Iterator[Concept]:
         """Iterate through all search results with auto-pagination.
 
@@ -134,8 +141,15 @@ class Search:
             query: Search query string
             vocabulary_ids: Filter by vocabulary IDs
             domain_ids: Filter by domain IDs
+            concept_class_ids: Filter by concept class IDs
+            standard_concept: Filter by standard concept ("S", "C", or None)
+            include_synonyms: Search in synonyms
+            include_invalid: Include invalid concepts
+            min_score: Minimum relevance score
+            exact_match: Require exact match
             page_size: Results per page
-            **kwargs: Additional search parameters
+            sort_by: Sort field
+            sort_order: Sort order ("asc" or "desc")
 
         Yields:
             Individual concepts from all pages
@@ -144,22 +158,40 @@ class Search:
         def fetch_page(
             page: int, size: int
         ) -> tuple[list[Concept], PaginationMeta | None]:
-            result = self.basic(
-                query,
-                vocabulary_ids=vocabulary_ids,
-                domain_ids=domain_ids,
-                page=page,
-                page_size=size,
-                **kwargs,
-            )
-            concepts = (
-                result.get("concepts", result) if isinstance(result, dict) else result
-            )
-            meta = (
-                result.get("meta", {}).get("pagination")
-                if isinstance(result, dict)
-                else None
-            )
+            # Build params manually to use get_raw() for full response with meta
+            params: dict[str, Any] = {
+                "query": query,
+                "page": page,
+                "page_size": size,
+            }
+            if vocabulary_ids:
+                params["vocabulary_ids"] = ",".join(vocabulary_ids)
+            if domain_ids:
+                params["domain_ids"] = ",".join(domain_ids)
+            if concept_class_ids:
+                params["concept_class_ids"] = ",".join(concept_class_ids)
+            if standard_concept:
+                params["standard_concept"] = standard_concept
+            if include_synonyms:
+                params["include_synonyms"] = "true"
+            if include_invalid:
+                params["include_invalid"] = "true"
+            if min_score is not None:
+                params["min_score"] = min_score
+            if exact_match:
+                params["exact_match"] = "true"
+            if sort_by:
+                params["sort_by"] = sort_by
+            if sort_order:
+                params["sort_order"] = sort_order
+
+            # Use get_raw() to preserve pagination metadata
+            result = self._request.get_raw("/search/concepts", params=params)
+
+            # Extract concepts from 'data' field (may be list or dict with 'concepts')
+            data = result.get("data", [])
+            concepts = data.get("concepts", data) if isinstance(data, dict) else data
+            meta = result.get("meta", {}).get("pagination")
             return concepts, meta
 
         yield from paginate_sync(fetch_page, page_size)

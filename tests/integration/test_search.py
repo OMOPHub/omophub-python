@@ -131,18 +131,32 @@ class TestSearchIntegration:
         assert isinstance(suggestions, list)
 
     def test_basic_iter_pagination(self, integration_client: OMOPHub) -> None:
-        """Test auto-pagination with basic_iter."""
-        # Collect first 5 concepts using iterator
+        """Test auto-pagination with basic_iter.
+
+        This test verifies that basic_iter correctly fetches multiple pages
+        of results. With page_size=2, we should be able to collect 5 concepts
+        which requires fetching at least 3 pages, proving pagination works.
+        """
+        # Collect concepts using iterator with small page size
         concepts = []
+        page_size = 2
+        max_concepts = 5
+
         for concept in integration_client.search.basic_iter(
             "diabetes",
-            page_size=2,  # Small page size to test pagination
+            page_size=page_size,  # Small page size to test pagination
         ):
             concepts.append(concept)
-            if len(concepts) >= 5:
+            if len(concepts) >= max_concepts:
                 break
 
-        assert len(concepts) == 5
+        # Should get requested number of concepts (proves pagination worked)
+        assert len(concepts) == max_concepts, (
+            f"Expected {max_concepts} concepts from paginated iterator, "
+            f"got {len(concepts)}. With page_size={page_size}, getting only "
+            f"{len(concepts)} concepts suggests pagination is broken."
+        )
+
         # All should have concept_id
         for concept in concepts:
             assert "concept_id" in concept

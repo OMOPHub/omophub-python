@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-01-24
+
+### Fixed
+
+- Fixed `search.basic_iter()` pagination bug that caused only the first page of results to be returned. The iterator now correctly fetches all pages when iterating through search results.
+
+### Changed
+
+- Added `get_raw()` method to internal request classes for retrieving full API responses with pagination metadata.
+- Expanded `search.basic_iter()` method signature to explicitly list all filter parameters instead of using `**kwargs`.
+
 ## [1.3.0] - 2026-01-06
 
 ### Changes
@@ -72,7 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/omopHub/omophub-python/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/omopHub/omophub-python/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/omopHub/omophub-python/compare/v0.1.0...v1.2.0
 [0.1.0]: https://github.com/omopHub/omophub-python/releases/tag/v0.1.0
