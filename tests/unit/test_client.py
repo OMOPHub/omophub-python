@@ -197,11 +197,11 @@ class TestClientConfiguration:
 
     def test_client_vocab_version(self, api_key: str) -> None:
         """Test client accepts vocab_version parameter."""
-        client = OMOPHub(api_key=api_key, vocab_version="2024.4")
+        client = OMOPHub(api_key=api_key, vocab_version="2024.2")
 
-        assert client._vocab_version == "2024.4"
+        assert client._vocab_version == "2024.2"
         # Verify it's passed to request handler
-        assert client._request._vocab_version == "2024.4"
+        assert client._request._vocab_version == "2024.2"
 
         client.close()
 

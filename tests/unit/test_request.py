@@ -103,7 +103,7 @@ class TestSyncRequest:
             http_client=http_client,
             base_url="https://api.example.com/v1",
             api_key="test_api_key",
-            vocab_version="2024.4",
+            vocab_version="2024.2",
         )
 
         with respx.mock:
@@ -114,7 +114,7 @@ class TestSyncRequest:
             request_handler.get("/test")
 
             assert "X-Vocab-Version" in route.calls[0].request.headers
-            assert route.calls[0].request.headers["X-Vocab-Version"] == "2024.4"
+            assert route.calls[0].request.headers["X-Vocab-Version"] == "2024.2"
 
     def test_request_id_extraction(self, request_handler: Request) -> None:
         """Test request ID is extracted from headers on error."""

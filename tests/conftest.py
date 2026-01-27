@@ -86,7 +86,7 @@ def mock_api_response(mock_concept: dict[str, Any]) -> dict[str, Any]:
         "meta": {
             "request_id": "req_test123",
             "timestamp": "2024-12-01T00:00:00Z",
-            "vocab_release": "2024.4",
+            "vocab_release": "2024.2",
         },
     }
 
