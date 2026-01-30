@@ -47,9 +47,10 @@ class Mappings:
 
     def map(
         self,
-        source_concepts: list[int],
         target_vocabulary: str,
         *,
+        source_concepts: list[int] | None = None,
+        source_codes: list[dict[str, str]] | None = None,
         mapping_type: str | None = None,
         include_invalid: bool = False,
         vocab_release: str | None = None,
@@ -57,19 +58,39 @@ class Mappings:
         """Map concepts to a target vocabulary.
 
         Args:
-            source_concepts: List of OMOP concept IDs to map
-            target_vocabulary: Target vocabulary ID (e.g., "ICD10CM", "SNOMED")
-            mapping_type: Mapping type (direct, equivalent, broader, narrower)
+            target_vocabulary: Target vocabulary ID (e.g., "ICD10CM", "SNOMED", "RxNorm")
+            source_concepts: List of OMOP concept IDs to map. Use this OR source_codes,
+                not both.
+            source_codes: List of vocabulary/code pairs to map, e.g.,
+                [{"vocabulary_id": "SNOMED", "concept_code": "387517004"}].
+                Use this OR source_concepts, not both.
+            mapping_type: Mapping type filter (direct, equivalent, broader, narrower)
             include_invalid: Include invalid mappings
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
             Mapping results with summary
+
+        Raises:
+            ValueError: If neither or both source_concepts and source_codes are provided
         """
+        # Validate: exactly one of source_concepts or source_codes required
+        has_concepts = source_concepts is not None and len(source_concepts) > 0
+        has_codes = source_codes is not None and len(source_codes) > 0
+
+        if not has_concepts and not has_codes:
+            raise ValueError("Either source_concepts or source_codes is required")
+        if has_concepts and has_codes:
+            raise ValueError("Cannot use both source_concepts and source_codes")
+
         body: dict[str, Any] = {
-            "source_concepts": source_concepts,
             "target_vocabulary": target_vocabulary,
         }
+
+        if source_concepts:
+            body["source_concepts"] = source_concepts
+        if source_codes:
+            body["source_codes"] = source_codes
         if mapping_type:
             body["mapping_type"] = mapping_type
         if include_invalid:
@@ -123,9 +144,10 @@ class AsyncMappings:
 
     async def map(
         self,
-        source_concepts: list[int],
         target_vocabulary: str,
         *,
+        source_concepts: list[int] | None = None,
+        source_codes: list[dict[str, str]] | None = None,
         mapping_type: str | None = None,
         include_invalid: bool = False,
         vocab_release: str | None = None,
@@ -133,19 +155,39 @@ class AsyncMappings:
         """Map concepts to a target vocabulary.
 
         Args:
-            source_concepts: List of OMOP concept IDs to map
-            target_vocabulary: Target vocabulary ID (e.g., "ICD10CM", "SNOMED")
-            mapping_type: Mapping type (direct, equivalent, broader, narrower)
+            target_vocabulary: Target vocabulary ID (e.g., "ICD10CM", "SNOMED", "RxNorm")
+            source_concepts: List of OMOP concept IDs to map. Use this OR source_codes,
+                not both.
+            source_codes: List of vocabulary/code pairs to map, e.g.,
+                [{"vocabulary_id": "SNOMED", "concept_code": "387517004"}].
+                Use this OR source_concepts, not both.
+            mapping_type: Mapping type filter (direct, equivalent, broader, narrower)
             include_invalid: Include invalid mappings
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
             Mapping results with summary
+
+        Raises:
+            ValueError: If neither or both source_concepts and source_codes are provided
         """
+        # Validate: exactly one of source_concepts or source_codes required
+        has_concepts = source_concepts is not None and len(source_concepts) > 0
+        has_codes = source_codes is not None and len(source_codes) > 0
+
+        if not has_concepts and not has_codes:
+            raise ValueError("Either source_concepts or source_codes is required")
+        if has_concepts and has_codes:
+            raise ValueError("Cannot use both source_concepts and source_codes")
+
         body: dict[str, Any] = {
-            "source_concepts": source_concepts,
             "target_vocabulary": target_vocabulary,
         }
+
+        if source_concepts:
+            body["source_concepts"] = source_concepts
+        if source_codes:
+            body["source_codes"] = source_codes
         if mapping_type:
             body["mapping_type"] = mapping_type
         if include_invalid:
