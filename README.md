@@ -58,6 +58,29 @@ mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabulary="SN
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
 ```
 
+## Semantic Search
+
+Use natural language queries to find concepts using neural embeddings:
+
+```python
+# Natural language search - understands clinical intent
+results = client.search.semantic("high blood sugar levels")
+for r in results["data"]["results"]:
+    print(f"{r['concept_name']} (similarity: {r['similarity_score']:.2f})")
+
+# Filter by vocabulary and set minimum similarity threshold
+results = client.search.semantic(
+    "heart attack",
+    vocabulary_ids=["SNOMED"],
+    domain_ids=["Condition"],
+    threshold=0.5
+)
+
+# Iterate through all results with auto-pagination
+for result in client.search.semantic_iter("chronic kidney disease", page_size=50):
+    print(f"{result['concept_id']}: {result['concept_name']}")
+```
+
 ## Async Support
 
 ```python
@@ -130,7 +153,7 @@ suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_si
 | Resource | Description | Key Methods |
 |----------|-------------|-------------|
 | `concepts` | Concept lookup and batch operations | `get()`, `get_by_code()`, `batch()`, `suggest()` |
-| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `fuzzy()` |
+| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `semantic_iter()`, `fuzzy()` |
 | `hierarchy` | Navigate concept relationships | `ancestors()`, `descendants()` |
 | `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
 | `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |
