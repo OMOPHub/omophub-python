@@ -172,6 +172,11 @@ def extract_data(result: dict[str, Any] | list[Any], key: str) -> list[Any]:
         value = result.get(key)
         if isinstance(value, list):
             return value
+        # Handle nested dicts: {"results": {"results": [...]}}
+        if isinstance(value, dict) and key in value:
+            nested = value.get(key)
+            if isinstance(nested, list):
+                return nested
         # Fallback: check 'results' key for batch endpoint backward compatibility
         # (production API returns 'results', new API will return 'concepts')
         if key == "concepts":
