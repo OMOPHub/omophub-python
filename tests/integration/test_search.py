@@ -172,10 +172,8 @@ class TestSemanticSearchIntegration:
             "myocardial infarction", page_size=5
         )
 
-        # SDK may return data wrapped in 'results' key
-        results = result.get("results", result)
-        if isinstance(results, dict) and "results" in results:
-            results = results["results"]
+        # SDK may return data wrapped in 'results' key or as a list
+        results = extract_data(result, "results")
 
         # Should have results
         assert isinstance(results, list)
@@ -195,9 +193,7 @@ class TestSemanticSearchIntegration:
             page_size=10,
         )
 
-        results = result.get("results", result)
-        if isinstance(results, dict) and "results" in results:
-            results = results["results"]
+        results = extract_data(result, "results")
 
         # If results exist, verify filters applied
         if len(results) > 0:
@@ -214,13 +210,8 @@ class TestSemanticSearchIntegration:
             "heart attack", threshold=0.8, page_size=20
         )
 
-        results_low = result_low.get("results", [])
-        results_high = result_high.get("results", [])
-
-        if isinstance(results_low, dict) and "results" in results_low:
-            results_low = results_low["results"]
-        if isinstance(results_high, dict) and "results" in results_high:
-            results_high = results_high["results"]
+        results_low = extract_data(result_low, "results")
+        results_high = extract_data(result_high, "results")
 
         # Guard: skip test if no results to compare
         if not results_low:
@@ -256,9 +247,7 @@ class TestSemanticSearchIntegration:
         )
 
         # Should have similar_concepts key or be a list
-        similar = result.get("similar_concepts", result)
-        if isinstance(similar, dict) and "similar_concepts" in similar:
-            similar = similar["similar_concepts"]
+        similar = extract_data(result, "similar_concepts")
 
         assert isinstance(similar, list)
         # If results exist, verify structure
@@ -272,9 +261,7 @@ class TestSemanticSearchIntegration:
             query="elevated blood glucose", page_size=5
         )
 
-        similar = result.get("similar_concepts", result)
-        if isinstance(similar, dict) and "similar_concepts" in similar:
-            similar = similar["similar_concepts"]
+        similar = extract_data(result, "similar_concepts")
 
         assert isinstance(similar, list)
 
@@ -306,9 +293,7 @@ class TestSemanticSearchIntegration:
             page_size=10,
         )
 
-        similar = result.get("similar_concepts", [])
-        if isinstance(similar, dict) and "similar_concepts" in similar:
-            similar = similar["similar_concepts"]
+        similar = extract_data(result, "similar_concepts")
 
         # If results, all should be from SNOMED
         for concept in similar:

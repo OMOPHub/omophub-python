@@ -65,7 +65,7 @@ Use natural language queries to find concepts using neural embeddings:
 ```python
 # Natural language search - understands clinical intent
 results = client.search.semantic("high blood sugar levels")
-for r in results["data"]["results"]:
+for r in results["results"]:
     print(f"{r['concept_name']} (similarity: {r['similarity_score']:.2f})")
 
 # Filter by vocabulary and set minimum similarity threshold
