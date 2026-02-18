@@ -38,6 +38,11 @@ from .search import (
     SearchFacets,
     SearchMetadata,
     SearchResult,
+    SemanticSearchMeta,
+    SemanticSearchResult,
+    SimilarConcept,
+    SimilarSearchMetadata,
+    SimilarSearchResult,
     Suggestion,
 )
 from .vocabulary import (
@@ -84,6 +89,11 @@ __all__ = [
     "SearchFacets",
     "SearchMetadata",
     "SearchResult",
+    "SemanticSearchMeta",
+    "SemanticSearchResult",
+    "SimilarConcept",
+    "SimilarSearchMetadata",
+    "SimilarSearchResult",
     "Suggestion",
     "Synonym",
     # Vocabulary
