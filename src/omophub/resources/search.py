@@ -297,7 +297,7 @@ class Search:
             domain_ids: Filter by domain IDs
             standard_concept: Filter by standard concept flag ('S' or 'C')
             concept_class_id: Filter by concept class
-            threshold: Minimum similarity threshold (0.0-1.0, default 0.3)
+            threshold: Minimum similarity threshold (0.0-1.0, default 0.5)
             page: Page number (1-based)
             page_size: Results per page (max 100)
 
