@@ -142,7 +142,7 @@ def rate_limit_delay(request: pytest.FixtureRequest) -> None:
     yield
     # Only delay for integration tests
     if "integration" in request.keywords:
-        time.sleep(1)
+        time.sleep(2)
 
 
 # Well-known test concept IDs for integration tests
