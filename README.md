@@ -81,6 +81,26 @@ for result in client.search.semantic_iter("chronic kidney disease", page_size=50
     print(f"{result['concept_id']}: {result['concept_name']}")
 ```
 
+### Similarity Search
+
+Find concepts similar to a known concept or natural language query:
+
+```python
+# Find concepts similar to a known concept
+results = client.search.similar(concept_id=201826, algorithm="hybrid")
+for r in results["results"]:
+    print(f"{r['concept_name']} (score: {r['similarity_score']:.2f})")
+
+# Find similar concepts using a natural language query
+results = client.search.similar(
+    query="medications for high blood pressure",
+    algorithm="semantic",
+    similarity_threshold=0.6,
+    vocabulary_ids=["RxNorm"],
+    include_scores=True,
+)
+```
+
 ## Async Support
 
 ```python
@@ -153,7 +173,7 @@ suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_si
 | Resource | Description | Key Methods |
 |----------|-------------|-------------|
 | `concepts` | Concept lookup and batch operations | `get()`, `get_by_code()`, `batch()`, `suggest()` |
-| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `semantic_iter()`, `fuzzy()` |
+| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `semantic_iter()`, `similar()`, `fuzzy()` |
 | `hierarchy` | Navigate concept relationships | `ancestors()`, `descendants()` |
 | `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
 | `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |

@@ -80,9 +80,68 @@ def pagination_example() -> None:
         print(f"  ... and {count - 3} more concepts shown (demo limited to {count})")
 
 
+def semantic_search() -> None:
+    """Demonstrate semantic search using neural embeddings."""
+    print("\n=== Semantic Search ===")
+
+    # Natural language search - understands clinical intent
+    results = client.search.semantic("high blood sugar levels")
+    for r in results["results"][:3]:
+        print(f"  {r['concept_name']} (similarity: {r['similarity_score']:.2f})")
+
+    # Filtered semantic search with minimum threshold
+    results = client.search.semantic(
+        "heart attack",
+        vocabulary_ids=["SNOMED"],
+        domain_ids=["Condition"],
+        threshold=0.5,
+    )
+    print(f"  Found {len(results['results'])} SNOMED conditions for 'heart attack'")
+
+
+def semantic_pagination() -> None:
+    """Demonstrate auto-pagination with semantic_iter."""
+    print("\n=== Semantic Pagination ===")
+
+    count = 0
+    for result in client.search.semantic_iter("chronic kidney disease", page_size=20):
+        count += 1
+        if count <= 3:
+            print(f"  {result['concept_id']}: {result['concept_name']}")
+        if count >= 50:  # Limit for demo
+            break
+
+    if count > 3:
+        print(f"  ... and {count - 3} more results (demo limited to {count})")
+
+
+def similarity_search() -> None:
+    """Demonstrate similarity search."""
+    print("\n=== Similarity Search ===")
+
+    # Find concepts similar to Type 2 diabetes mellitus (concept_id=201826)
+    results = client.search.similar(concept_id=201826, algorithm="hybrid")
+    print("Concepts similar to 'Type 2 diabetes mellitus':")
+    for r in results["results"][:5]:
+        print(f"  {r['concept_name']} (score: {r['similarity_score']:.2f})")
+
+    # Find similar using a natural language query with semantic algorithm
+    results = client.search.similar(
+        query="medications for high blood pressure",
+        algorithm="semantic",
+        similarity_threshold=0.6,
+        vocabulary_ids=["RxNorm"],
+        include_scores=True,
+    )
+    print(f"\n  Found {len(results['results'])} similar RxNorm concepts")
+
+
 if __name__ == "__main__":
     basic_search()
     filtered_search()
     fuzzy_search()
     autocomplete_example()
     pagination_example()
+    semantic_search()
+    semantic_pagination()
+    similarity_search()

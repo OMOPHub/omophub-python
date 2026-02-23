@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-23
+
+### Added
+
+- **Semantic search** (`search.semantic()`, `search.semantic_iter()`): Natural language concept search using neural embeddings. Search for clinical intent like "high blood sugar levels" to find diabetes-related concepts. Supports filtering by vocabulary, domain, standard concept, concept class, and minimum similarity threshold. `semantic_iter()` provides automatic pagination.
+- **Similarity search** (`search.similar()`): Find concepts similar to a reference concept ID, concept name, or natural language query. Three algorithm options: `'semantic'` (neural embeddings), `'lexical'` (string matching), and `'hybrid'` (combined). Configurable similarity threshold with optional detailed scores and explanations.
+
 ## [1.3.1] - 2026-01-24
 
 ### Fixed
@@ -83,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/omopHub/omophub-python/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/omopHub/omophub-python/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/omopHub/omophub-python/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/omopHub/omophub-python/compare/v0.1.0...v1.2.0
