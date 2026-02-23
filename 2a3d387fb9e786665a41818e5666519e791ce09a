@@ -1,0 +1,23 @@
+tests/conftest.py
+  593752576cb93f1f 145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "2a3d387fb9e786665a41818e5666519e791ce09a",
+  "prompts": {
+    "593752576cb93f1f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "14ec43ab-89e1-4870-93b1-0364165f2908",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
