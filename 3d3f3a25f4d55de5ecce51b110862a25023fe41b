@@ -1,0 +1,23 @@
+CHANGELOG.md
+  f80326fd40ca8e3e 8-13,99-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.6",
+  "base_commit_sha": "3d3f3a25f4d55de5ecce51b110862a25023fe41b",
+  "prompts": {
+    "f80326fd40ca8e3e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1c3d9ef4-0d87-4880-aa90-8acfd45553d7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 1,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
