@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-02-28
+
+### Fixed
+
+- User-Agent header now reports actual SDK version (e.g., `OMOPHub-SDK-Python/1.4.1`) instead of hardcoded `0.1.0`. Version is resolved at runtime via `importlib.metadata`.
+
 ## [1.4.0] - 2026-02-23
 
 ### Added
@@ -90,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/omopHub/omophub-python/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/omopHub/omophub-python/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/omopHub/omophub-python/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/omopHub/omophub-python/compare/v1.2.0...v1.3.0
