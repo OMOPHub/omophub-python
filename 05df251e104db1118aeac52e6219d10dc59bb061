@@ -1,0 +1,23 @@
+src/omophub/_http.py
+  528fb1f0c4faa636 140-143,229-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "05df251e104db1118aeac52e6219d10dc59bb061",
+  "prompts": {
+    "528fb1f0c4faa636": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa1e0dfd-4b03-4a4a-b485-57a92636645b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
