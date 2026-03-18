@@ -137,6 +137,10 @@ class SyncHTTPClient(HTTPClient):
                     params=filtered_params if filtered_params else None,
                     json=json,
                 )
+                # Retry on server errors (502, 503, 504)
+                if response.status_code in (502, 503, 504) and attempt < self._max_retries:
+                    time.sleep(2**attempt * 0.5)
+                    continue
                 return response.content, response.status_code, response.headers
 
             except httpx.ConnectError as e:
@@ -222,6 +226,10 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
                     params=filtered_params if filtered_params else None,
                     json=json,
                 )
+                # Retry on server errors (502, 503, 504)
+                if response.status_code in (502, 503, 504) and attempt < self._max_retries:
+                    await asyncio.sleep(2**attempt * 0.5)
+                    continue
                 return response.content, response.status_code, response.headers
 
             except httpx.ConnectError as e:
