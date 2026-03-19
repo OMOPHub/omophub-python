@@ -138,7 +138,10 @@ class SyncHTTPClient(HTTPClient):
                     json=json,
                 )
                 # Retry on server errors (502, 503, 504)
-                if response.status_code in (502, 503, 504) and attempt < self._max_retries:
+                if (
+                    response.status_code in (502, 503, 504)
+                    and attempt < self._max_retries
+                ):
                     time.sleep(2**attempt * 0.5)
                     continue
                 return response.content, response.status_code, response.headers
@@ -227,7 +230,10 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
                     json=json,
                 )
                 # Retry on server errors (502, 503, 504)
-                if response.status_code in (502, 503, 504) and attempt < self._max_retries:
+                if (
+                    response.status_code in (502, 503, 504)
+                    and attempt < self._max_retries
+                ):
                     await asyncio.sleep(2**attempt * 0.5)
                     continue
                 return response.content, response.status_code, response.headers
