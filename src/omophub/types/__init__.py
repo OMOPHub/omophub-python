@@ -34,6 +34,15 @@ from .relationship import (
     RelationshipType,
 )
 from .search import (
+    BulkSearchDefaults,
+    BulkSearchInput,
+    BulkSearchResponse,
+    BulkSearchResultItem,
+    BulkSemanticSearchDefaults,
+    BulkSemanticSearchInput,
+    BulkSemanticSearchResponse,
+    BulkSemanticSearchResultItem,
+    QueryEnhancement,
     SearchFacet,
     SearchFacets,
     SearchMetadata,
@@ -84,6 +93,16 @@ __all__ = [
     "RelationshipSummary",
     "RelationshipType",
     "ResponseMeta",
+    # Bulk Search
+    "BulkSearchDefaults",
+    "BulkSearchInput",
+    "BulkSearchResponse",
+    "BulkSearchResultItem",
+    "BulkSemanticSearchDefaults",
+    "BulkSemanticSearchInput",
+    "BulkSemanticSearchResponse",
+    "BulkSemanticSearchResultItem",
+    "QueryEnhancement",
     # Search
     "SearchFacet",
     "SearchFacets",

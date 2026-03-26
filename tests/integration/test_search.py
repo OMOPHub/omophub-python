@@ -298,3 +298,95 @@ class TestSemanticSearchIntegration:
         # If results, all should be from SNOMED
         for concept in similar:
             assert concept.get("vocabulary_id") == "SNOMED"
+
+
+@pytest.mark.integration
+class TestBulkBasicSearchIntegration:
+    """Integration tests for bulk lexical search."""
+
+    def test_bulk_basic_multiple_queries(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with multiple queries."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "q1", "query": "diabetes mellitus"},
+            {"search_id": "q2", "query": "hypertension"},
+            {"search_id": "q3", "query": "aspirin"},
+        ], defaults={"page_size": 5})
+
+        results = extract_data(result, "results")
+        assert len(results) == 3
+
+        # Verify each search has results
+        for item in results:
+            assert item["search_id"] in ("q1", "q2", "q3")
+            assert item["status"] == "completed"
+            assert len(item["results"]) > 0
+
+    def test_bulk_basic_with_vocabulary_filter(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with shared vocabulary filter."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "snomed1", "query": "diabetes"},
+            {"search_id": "snomed2", "query": "myocardial infarction"},
+        ], defaults={"vocabulary_ids": ["SNOMED"], "page_size": 3})
+
+        results = extract_data(result, "results")
+        for item in results:
+            assert item["status"] == "completed"
+            # Verify SNOMED filter applied
+            for concept in item["results"]:
+                assert concept.get("vocabulary_id") == "SNOMED"
+
+    def test_bulk_basic_single_query(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with a single query."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "single", "query": "metformin", "page_size": 3},
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["search_id"] == "single"
+        assert results[0]["status"] == "completed"
+
+
+@pytest.mark.integration
+class TestBulkSemanticSearchIntegration:
+    """Integration tests for bulk semantic search."""
+
+    def test_bulk_semantic_multiple_queries(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with multiple natural-language queries."""
+        result = integration_client.search.bulk_semantic([
+            {"search_id": "s1", "query": "heart failure treatment options"},
+            {"search_id": "s2", "query": "type 2 diabetes medication"},
+        ], defaults={"threshold": 0.5, "page_size": 5})
+
+        results = extract_data(result, "results")
+        assert len(results) == 2
+
+        for item in results:
+            assert item["search_id"] in ("s1", "s2")
+            assert item["status"] == "completed"
+
+    def test_bulk_semantic_with_filters(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with vocabulary and domain filters."""
+        result = integration_client.search.bulk_semantic([
+            {
+                "search_id": "filtered",
+                "query": "pain relief medication",
+                "vocabulary_ids": ["SNOMED"],
+                "page_size": 3,
+                "threshold": 0.5,
+            },
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["status"] == "completed"
+
+    def test_bulk_semantic_single_query(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with a single query."""
+        result = integration_client.search.bulk_semantic([
+            {"search_id": "one", "query": "elevated blood pressure", "threshold": 0.5},
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["search_id"] == "one"

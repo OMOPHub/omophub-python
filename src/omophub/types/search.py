@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, Required
 
 if TYPE_CHECKING:
     from .concept import Concept
@@ -75,6 +75,112 @@ class SimilarSearchResult(TypedDict):
 
     similar_concepts: list[SimilarConcept]
     search_metadata: SimilarSearchMetadata
+
+
+# ---------------------------------------------------------------------------
+# Bulk search types
+# ---------------------------------------------------------------------------
+
+
+class BulkSearchInput(TypedDict, total=False):
+    """Input for a single query in a bulk lexical search."""
+
+    search_id: Required[str]
+    query: Required[str]
+    vocabulary_ids: list[str]
+    domain_ids: list[str]
+    concept_class_ids: list[str]
+    standard_concept: str
+    include_invalid: bool
+    page_size: int
+
+
+class BulkSearchDefaults(TypedDict, total=False):
+    """Default filters applied to all searches in a bulk lexical request."""
+
+    vocabulary_ids: list[str]
+    domain_ids: list[str]
+    concept_class_ids: list[str]
+    standard_concept: str
+    include_invalid: bool
+    page_size: int
+
+
+class BulkSearchResultItem(TypedDict):
+    """Result for a single query in a bulk lexical search."""
+
+    search_id: str
+    query: str
+    results: list[dict[str, Any]]
+    status: str  # "completed" | "failed"
+    error: NotRequired[str]
+    duration: NotRequired[int]
+
+
+class BulkSearchResponse(TypedDict):
+    """Response from bulk lexical search."""
+
+    results: list[BulkSearchResultItem]
+    total_searches: int
+    completed_searches: int
+    failed_searches: int
+
+
+class BulkSemanticSearchInput(TypedDict, total=False):
+    """Input for a single query in a bulk semantic search."""
+
+    search_id: Required[str]
+    query: Required[str]  # 1-500 characters
+    page_size: int
+    threshold: float
+    vocabulary_ids: list[str]
+    domain_ids: list[str]
+    standard_concept: str
+    concept_class_id: str
+
+
+class BulkSemanticSearchDefaults(TypedDict, total=False):
+    """Default filters applied to all searches in a bulk semantic request."""
+
+    page_size: int
+    threshold: float
+    vocabulary_ids: list[str]
+    domain_ids: list[str]
+    standard_concept: str
+    concept_class_id: str
+
+
+class QueryEnhancement(TypedDict, total=False):
+    """Query enhancement info from semantic search."""
+
+    original_query: str
+    enhanced_query: str
+    abbreviations_expanded: list[str]
+    misspellings_corrected: list[str]
+
+
+class BulkSemanticSearchResultItem(TypedDict):
+    """Result for a single query in a bulk semantic search."""
+
+    search_id: str
+    query: str
+    results: list[dict[str, Any]]
+    status: str  # "completed" | "failed"
+    error: NotRequired[str]
+    similarity_threshold: NotRequired[float]
+    result_count: NotRequired[int]
+    duration: NotRequired[int]
+    query_enhancement: NotRequired[QueryEnhancement]
+
+
+class BulkSemanticSearchResponse(TypedDict):
+    """Response from bulk semantic search."""
+
+    results: list[BulkSemanticSearchResultItem]
+    total_searches: int
+    completed_count: int
+    failed_count: int
+    total_duration: NotRequired[int]
 
 
 class SearchFacet(TypedDict):

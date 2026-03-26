@@ -850,3 +850,139 @@ class TestAsyncSemanticSearch:
         assert body["include_invalid"] is True
         assert body["include_scores"] is True
         assert body["include_explanations"] is True
+
+
+class TestBulkBasicSearch:
+    """Tests for bulk lexical search."""
+
+    @respx.mock
+    def test_bulk_basic(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk basic search with multiple queries."""
+        mock_response = {
+            "success": True,
+            "data": {
+                "results": [
+                    {
+                        "search_id": "q1",
+                        "query": "diabetes",
+                        "results": [{"concept_id": 201826, "concept_name": "Type 2 diabetes"}],
+                        "status": "completed",
+                        "duration": 15,
+                    },
+                    {
+                        "search_id": "q2",
+                        "query": "hypertension",
+                        "results": [{"concept_id": 316866, "concept_name": "Hypertensive disorder"}],
+                        "status": "completed",
+                        "duration": 12,
+                    },
+                ],
+                "total_searches": 2,
+                "completed_searches": 2,
+                "failed_searches": 0,
+            },
+        }
+        respx.post(f"{base_url}/search/bulk").mock(
+            return_value=Response(200, json=mock_response)
+        )
+
+        result = sync_client.search.bulk_basic([
+            {"search_id": "q1", "query": "diabetes"},
+            {"search_id": "q2", "query": "hypertension"},
+        ])
+
+        assert len(result["results"]) == 2
+        assert result["total_searches"] == 2
+        assert result["completed_searches"] == 2
+        assert result["results"][0]["search_id"] == "q1"
+
+    @respx.mock
+    def test_bulk_basic_with_defaults(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk basic search with shared defaults."""
+        import json
+
+        respx.post(f"{base_url}/search/bulk").mock(
+            return_value=Response(200, json={
+                "success": True,
+                "data": {
+                    "results": [],
+                    "total_searches": 1,
+                    "completed_searches": 1,
+                    "failed_searches": 0,
+                },
+            })
+        )
+
+        sync_client.search.bulk_basic(
+            [{"search_id": "q1", "query": "diabetes"}],
+            defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5},
+        )
+
+        request_body = json.loads(respx.calls[0].request.content)
+        assert request_body["defaults"]["vocabulary_ids"] == ["SNOMED"]
+        assert request_body["defaults"]["page_size"] == 5
+
+
+class TestBulkSemanticSearch:
+    """Tests for bulk semantic search."""
+
+    @respx.mock
+    def test_bulk_semantic(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk semantic search with multiple queries."""
+        mock_response = {
+            "success": True,
+            "data": {
+                "results": [
+                    {
+                        "search_id": "s1",
+                        "query": "heart failure treatment",
+                        "results": [{"concept_id": 316139, "similarity_score": 0.92}],
+                        "status": "completed",
+                        "result_count": 1,
+                        "duration": 45,
+                    },
+                ],
+                "total_searches": 1,
+                "completed_count": 1,
+                "failed_count": 0,
+                "total_duration": 45,
+            },
+        }
+        respx.post(f"{base_url}/search/semantic-bulk").mock(
+            return_value=Response(200, json=mock_response)
+        )
+
+        result = sync_client.search.bulk_semantic([
+            {"search_id": "s1", "query": "heart failure treatment"},
+        ])
+
+        assert len(result["results"]) == 1
+        assert result["completed_count"] == 1
+        assert result["results"][0]["status"] == "completed"
+
+    @respx.mock
+    def test_bulk_semantic_with_defaults(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk semantic search with shared defaults."""
+        import json
+
+        respx.post(f"{base_url}/search/semantic-bulk").mock(
+            return_value=Response(200, json={
+                "success": True,
+                "data": {
+                    "results": [],
+                    "total_searches": 1,
+                    "completed_count": 1,
+                    "failed_count": 0,
+                },
+            })
+        )
+
+        sync_client.search.bulk_semantic(
+            [{"search_id": "s1", "query": "diabetes medications"}],
+            defaults={"threshold": 0.8, "page_size": 10, "vocabulary_ids": ["SNOMED"]},
+        )
+
+        request_body = json.loads(respx.calls[0].request.content)
+        assert request_body["defaults"]["threshold"] == 0.8
+        assert request_body["defaults"]["page_size"] == 10
+        assert request_body["defaults"]["vocabulary_ids"] == ["SNOMED"]
