@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Examples of searching for concepts using the OMOPHub SDK."""
+"""Examples of searching for concepts using the OMOPHub SDK.
+
+Demonstrates: basic search, filtered search, autocomplete, pagination,
+semantic search, similarity search, bulk lexical search, and bulk semantic search.
+"""
 
 import omophub
 
@@ -38,17 +42,61 @@ def filtered_search() -> None:
         print(f"  [{c['vocabulary_id']}] {c['concept_name']}")
 
 
-def fuzzy_search() -> None:
-    """Demonstrate typo-tolerant fuzzy search."""
-    print("\n=== Fuzzy Search ===")
+def bulk_lexical_search() -> None:
+    """Demonstrate bulk lexical search — multiple queries in one call."""
+    print("\n=== Bulk Lexical Search ===")
 
-    # Fuzzy search handles typos
-    results = client.search.fuzzy("diabetis mellitus")  # Typo in 'diabetes'
-    concepts = results.get("concepts", results)
-    print("Fuzzy search for 'diabetis mellitus' (typo):")
+    # Search for multiple terms at once (up to 50)
+    results = client.search.bulk_basic(
+        [
+            {"search_id": "q1", "query": "diabetes mellitus"},
+            {"search_id": "q2", "query": "hypertension"},
+            {"search_id": "q3", "query": "aspirin"},
+        ],
+        defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5},
+    )
 
-    for c in concepts[:3]:
-        print(f"  {c['concept_name']}")
+    for item in results["results"]:
+        print(f"  {item['search_id']}: {len(item['results'])} results ({item['status']})")
+
+    # Per-query overrides — different domains per query
+    results = client.search.bulk_basic(
+        [
+            {"search_id": "conditions", "query": "diabetes", "domain_ids": ["Condition"]},
+            {"search_id": "drugs", "query": "metformin", "domain_ids": ["Drug"]},
+        ],
+        defaults={"vocabulary_ids": ["SNOMED", "RxNorm"], "page_size": 3},
+    )
+
+    print("\n  Per-query domain overrides:")
+    for item in results["results"]:
+        print(f"    {item['search_id']}:")
+        for c in item["results"]:
+            print(f"      {c['concept_name']} ({c['vocabulary_id']}/{c['domain_id']})")
+
+
+def bulk_semantic_search() -> None:
+    """Demonstrate bulk semantic search — multiple NLP queries in one call."""
+    print("\n=== Bulk Semantic Search ===")
+
+    # Search for multiple natural-language queries (up to 25)
+    results = client.search.bulk_semantic(
+        [
+            {"search_id": "s1", "query": "heart failure treatment options"},
+            {"search_id": "s2", "query": "type 2 diabetes medication"},
+            {"search_id": "s3", "query": "elevated blood pressure"},
+        ],
+        defaults={"threshold": 0.5, "page_size": 5},
+    )
+
+    for item in results["results"]:
+        count = item.get("result_count", len(item["results"]))
+        print(f"  {item['search_id']}: {count} results ({item['status']})")
+
+        # Show top result per query
+        if item["results"]:
+            top = item["results"][0]
+            print(f"    Top: {top['concept_name']} (score: {top['similarity_score']:.2f})")
 
 
 def autocomplete_example() -> None:
@@ -139,9 +187,10 @@ def similarity_search() -> None:
 if __name__ == "__main__":
     basic_search()
     filtered_search()
-    fuzzy_search()
     autocomplete_example()
     pagination_example()
     semantic_search()
     semantic_pagination()
     similarity_search()
+    bulk_lexical_search()
+    bulk_semantic_search()
