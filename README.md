@@ -81,6 +81,28 @@ for result in client.search.semantic_iter("chronic kidney disease", page_size=50
     print(f"{result['concept_id']}: {result['concept_name']}")
 ```
 
+### Bulk Search
+
+Search for multiple terms in a single API call — much faster than individual requests:
+
+```python
+# Bulk lexical search (up to 50 queries)
+results = client.search.bulk_basic([
+    {"search_id": "q1", "query": "diabetes mellitus"},
+    {"search_id": "q2", "query": "hypertension"},
+    {"search_id": "q3", "query": "aspirin"},
+], defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5})
+
+for item in results["results"]:
+    print(f"{item['search_id']}: {len(item['results'])} results")
+
+# Bulk semantic search (up to 25 queries)
+results = client.search.bulk_semantic([
+    {"search_id": "s1", "query": "heart failure treatment options"},
+    {"search_id": "s2", "query": "type 2 diabetes medication"},
+], defaults={"threshold": 0.5, "page_size": 10})
+```
+
 ### Similarity Search
 
 Find concepts similar to a known concept or natural language query:
@@ -173,7 +195,7 @@ suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_si
 | Resource | Description | Key Methods |
 |----------|-------------|-------------|
 | `concepts` | Concept lookup and batch operations | `get()`, `get_by_code()`, `batch()`, `suggest()` |
-| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `semantic_iter()`, `similar()`, `fuzzy()` |
+| `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `similar()`, `bulk_basic()`, `bulk_semantic()` |
 | `hierarchy` | Navigate concept relationships | `ancestors()`, `descendants()` |
 | `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
 | `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |

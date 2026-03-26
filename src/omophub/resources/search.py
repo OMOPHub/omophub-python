@@ -13,6 +13,12 @@ if TYPE_CHECKING:
     from ..types.common import PaginationMeta
     from ..types.concept import Concept
     from ..types.search import (
+        BulkSearchDefaults,
+        BulkSearchInput,
+        BulkSearchResponse,
+        BulkSemanticSearchDefaults,
+        BulkSemanticSearchInput,
+        BulkSemanticSearchResponse,
         SearchResult,
         SemanticSearchResult,
         SimilarSearchResult,
@@ -372,6 +378,77 @@ class Search:
 
         yield from paginate_sync(fetch_page, page_size)
 
+    def bulk_basic(
+        self,
+        searches: list[BulkSearchInput],
+        *,
+        defaults: BulkSearchDefaults | None = None,
+    ) -> BulkSearchResponse:
+        """Execute multiple lexical searches in a single request.
+
+        Sends up to 50 search queries in one API call. Each search can have
+        its own filters, or you can set shared defaults.
+
+        Args:
+            searches: List of search inputs, each with a unique ``search_id``
+                and ``query``. Max 50 items.
+            defaults: Default filters applied to all searches. Individual
+                search-level values override defaults.
+
+        Returns:
+            Bulk results with per-search status, results, and timing.
+
+        Example::
+
+            results = client.search.bulk_basic([
+                {"search_id": "q1", "query": "diabetes"},
+                {"search_id": "q2", "query": "hypertension"},
+            ], defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5})
+
+            for item in results["results"]:
+                print(item["search_id"], len(item["results"]))
+        """
+        body: dict[str, Any] = {"searches": searches}
+        if defaults:
+            body["defaults"] = defaults
+        return self._request.post("/search/bulk", json_data=body)
+
+    def bulk_semantic(
+        self,
+        searches: list[BulkSemanticSearchInput],
+        *,
+        defaults: BulkSemanticSearchDefaults | None = None,
+    ) -> BulkSemanticSearchResponse:
+        """Execute multiple semantic searches in a single request.
+
+        Sends up to 25 natural-language queries in one API call using neural
+        embeddings. Each search can have its own filters and threshold.
+
+        Args:
+            searches: List of search inputs, each with a unique ``search_id``
+                and ``query`` (1-500 chars). Max 25 items.
+            defaults: Default filters applied to all searches. Individual
+                search-level values override defaults.
+
+        Returns:
+            Bulk results with per-search status, similarity scores, and
+            optional query enhancements.
+
+        Example::
+
+            results = client.search.bulk_semantic([
+                {"search_id": "s1", "query": "heart failure treatment"},
+                {"search_id": "s2", "query": "type 2 diabetes medication"},
+            ], defaults={"threshold": 0.8, "page_size": 10})
+
+            for item in results["results"]:
+                print(item["search_id"], item.get("result_count", 0))
+        """
+        body: dict[str, Any] = {"searches": searches}
+        if defaults:
+            body["defaults"] = defaults
+        return self._request.post("/search/semantic-bulk", json_data=body)
+
     def similar(
         self,
         *,
@@ -629,6 +706,46 @@ class AsyncSearch:
                 break
 
             page += 1
+
+    async def bulk_basic(
+        self,
+        searches: list[BulkSearchInput],
+        *,
+        defaults: BulkSearchDefaults | None = None,
+    ) -> BulkSearchResponse:
+        """Execute multiple lexical searches in a single request.
+
+        Args:
+            searches: List of search inputs (max 50).
+            defaults: Default filters for all searches.
+
+        Returns:
+            Bulk results with per-search status and results.
+        """
+        body: dict[str, Any] = {"searches": searches}
+        if defaults:
+            body["defaults"] = defaults
+        return await self._request.post("/search/bulk", json_data=body)
+
+    async def bulk_semantic(
+        self,
+        searches: list[BulkSemanticSearchInput],
+        *,
+        defaults: BulkSemanticSearchDefaults | None = None,
+    ) -> BulkSemanticSearchResponse:
+        """Execute multiple semantic searches in a single request.
+
+        Args:
+            searches: List of search inputs (max 25).
+            defaults: Default filters for all searches.
+
+        Returns:
+            Bulk results with per-search status and similarity scores.
+        """
+        body: dict[str, Any] = {"searches": searches}
+        if defaults:
+            body["defaults"] = defaults
+        return await self._request.post("/search/semantic-bulk", json_data=body)
 
     async def similar(
         self,
