@@ -1,0 +1,25 @@
+tests/conftest.py
+  fbf8eddf7d63a736 145-150
+CHANGELOG.md
+  fbf8eddf7d63a736 8-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "eee0a13a9e0cd68b7bfd5a8abea60b6d1f1a5dae",
+  "prompts": {
+    "fbf8eddf7d63a736": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b7194bf1-48e2-427b-93c7-45db94416fa3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>",
+      "messages": [],
+      "total_additions": 20,
+      "total_deletions": 1,
+      "accepted_lines": 20,
+      "overriden_lines": 0
+    }
+  }
+}
