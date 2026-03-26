@@ -315,9 +315,10 @@ class TestBulkBasicSearchIntegration:
         results = extract_data(result, "results")
         assert len(results) == 3
 
-        # Verify each search has results
+        # Verify all 3 search IDs are present with results
+        returned_ids = {item["search_id"] for item in results}
+        assert returned_ids == {"q1", "q2", "q3"}
         for item in results:
-            assert item["search_id"] in ("q1", "q2", "q3")
             assert item["status"] == "completed"
             assert len(item["results"]) > 0
 
@@ -380,6 +381,10 @@ class TestBulkSemanticSearchIntegration:
         results = extract_data(result, "results")
         assert len(results) == 1
         assert results[0]["status"] == "completed"
+
+        # Verify SNOMED vocabulary filter was applied
+        for concept in results[0]["results"]:
+            assert concept.get("vocabulary_id") == "SNOMED"
 
     def test_bulk_semantic_single_query(self, integration_client: OMOPHub) -> None:
         """Test bulk semantic search with a single query."""
