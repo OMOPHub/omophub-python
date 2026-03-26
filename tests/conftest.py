@@ -142,7 +142,12 @@ def rate_limit_delay(request: pytest.FixtureRequest) -> None:
     yield
     # Only delay for integration tests
     if "integration" in request.keywords:
-        time.sleep(2)
+        # Bulk endpoints consume more rate limit budget
+        test_name = request.node.name
+        if "bulk" in test_name:
+            time.sleep(5)
+        else:
+            time.sleep(2)
 
 
 # Well-known test concept IDs for integration tests

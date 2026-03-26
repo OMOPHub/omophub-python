@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-03-26
+
+### Added
+
+- **Bulk lexical search** (`search.bulk_basic()`): Execute up to 50 keyword searches in a single API call. Supports shared defaults for vocabulary, domain, and other filters. Each search is identified by a unique `search_id` for result matching. Maps to `POST /v1/search/bulk`.
+- **Bulk semantic search** (`search.bulk_semantic()`): Execute up to 25 natural-language searches using neural embeddings in a single call. Supports per-search similarity thresholds and shared defaults. Includes query enhancement data (abbreviation expansion, misspelling correction). Maps to `POST /v1/search/semantic-bulk`.
+- New TypedDict types for bulk search: `BulkSearchInput`, `BulkSearchDefaults`, `BulkSearchResponse`, `BulkSearchResultItem`, `BulkSemanticSearchInput`, `BulkSemanticSearchDefaults`, `BulkSemanticSearchResponse`, `BulkSemanticSearchResultItem`, `QueryEnhancement`.
+- Both sync (`OMOPHub`) and async (`AsyncOMOPHub`) clients support bulk search methods.
+
+### Changed
+
+- Updated `__all__` exports to alphabetical order (ruff RUF022 compliance).
+- `BulkSearchInput` and `BulkSemanticSearchInput` now use `Required[str]` for `search_id` and `query` fields for proper type checking.
+
 ## [1.4.1] - 2026-02-28
 
 ### Fixed
