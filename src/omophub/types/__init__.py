@@ -62,38 +62,9 @@ from .vocabulary import (
 )
 
 __all__ = [
-    # Common
     "APIResponse",
-    # Hierarchy
     "Ancestor",
     "BatchConceptResult",
-    # Concept
-    "Concept",
-    "ConceptSummary",
-    "Descendant",
-    # Domain
-    "Domain",
-    "DomainCategory",
-    "DomainStats",
-    "DomainSummary",
-    "ErrorDetail",
-    "ErrorResponse",
-    "HierarchyPath",
-    "HierarchySummary",
-    # Mapping
-    "Mapping",
-    "MappingContext",
-    "MappingQuality",
-    "MappingSummary",
-    "PaginationMeta",
-    "PaginationParams",
-    "RelatedConcept",
-    # Relationship
-    "Relationship",
-    "RelationshipSummary",
-    "RelationshipType",
-    "ResponseMeta",
-    # Bulk Search
     "BulkSearchDefaults",
     "BulkSearchInput",
     "BulkSearchResponse",
@@ -102,8 +73,29 @@ __all__ = [
     "BulkSemanticSearchInput",
     "BulkSemanticSearchResponse",
     "BulkSemanticSearchResultItem",
+    "Concept",
+    "ConceptSummary",
+    "Descendant",
+    "Domain",
+    "DomainCategory",
+    "DomainStats",
+    "DomainSummary",
+    "ErrorDetail",
+    "ErrorResponse",
+    "HierarchyPath",
+    "HierarchySummary",
+    "Mapping",
+    "MappingContext",
+    "MappingQuality",
+    "MappingSummary",
+    "PaginationMeta",
+    "PaginationParams",
     "QueryEnhancement",
-    # Search
+    "RelatedConcept",
+    "Relationship",
+    "RelationshipSummary",
+    "RelationshipType",
+    "ResponseMeta",
     "SearchFacet",
     "SearchFacets",
     "SearchMetadata",
@@ -115,7 +107,6 @@ __all__ = [
     "SimilarSearchResult",
     "Suggestion",
     "Synonym",
-    # Vocabulary
     "Vocabulary",
     "VocabularyDomain",
     "VocabularyStats",
