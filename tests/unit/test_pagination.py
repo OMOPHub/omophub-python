@@ -199,12 +199,12 @@ class TestPaginateAsync:
         assert result == items
 
     @pytest.mark.asyncio
-    async def test_sync_callable_fallback(self) -> None:
-        """Test paginate_async works with sync callables too."""
+    async def test_async_callable_required(self) -> None:
+        """Test paginate_async requires an async callable (not sync)."""
         items = [{"id": 1}, {"id": 2}]
-        meta = {"page": 1, "has_next": False}
+        meta: dict[str, object] = {"page": 1, "has_next": False}
 
-        def fetch_page(page: int, page_size: int) -> tuple:
+        async def fetch_page(page: int, page_size: int) -> tuple:
             return items, meta
 
         result = [item async for item in paginate_async(fetch_page)]
