@@ -16,6 +16,15 @@ from .concept import (
     Synonym,
 )
 from .domain import Domain, DomainCategory, DomainStats, DomainSummary
+from .fhir import (
+    FhirBatchResult,
+    FhirBatchSummary,
+    FhirCodeableConceptResult,
+    FhirResolution,
+    FhirResolveResult,
+    RecommendedConceptOutput,
+    ResolvedConcept,
+)
 from .hierarchy import (
     Ancestor,
     Descendant,
@@ -82,6 +91,11 @@ __all__ = [
     "DomainSummary",
     "ErrorDetail",
     "ErrorResponse",
+    "FhirBatchResult",
+    "FhirBatchSummary",
+    "FhirCodeableConceptResult",
+    "FhirResolution",
+    "FhirResolveResult",
     "HierarchyPath",
     "HierarchySummary",
     "Mapping",
@@ -91,7 +105,9 @@ __all__ = [
     "PaginationMeta",
     "PaginationParams",
     "QueryEnhancement",
+    "RecommendedConceptOutput",
     "RelatedConcept",
+    "ResolvedConcept",
     "Relationship",
     "RelationshipSummary",
     "RelationshipType",
