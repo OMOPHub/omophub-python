@@ -17,6 +17,66 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+def _parse_and_raise(
+    content: bytes,
+    status_code: int,
+    headers: Mapping[str, str],
+) -> dict[str, Any]:
+    """Parse JSON response body and raise on HTTP errors.
+
+    Shared by both sync and async request classes to avoid duplicating
+    the JSON-decode, error-extraction, and rate-limit-retry logic.
+
+    Returns:
+        The parsed JSON dict (caller decides whether to unwrap ``data``).
+
+    Raises:
+        OMOPHubError: On invalid JSON from a successful response.
+        APIError / RateLimitError / etc.: On HTTP error status codes.
+    """
+    request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
+
+    try:
+        data = json.loads(content) if content else {}
+    except json.JSONDecodeError as exc:
+        if status_code >= 400:
+            raise_for_status(
+                status_code,
+                f"Request failed with status {status_code}",
+                request_id=request_id,
+            )
+        raise OMOPHubError(
+            f"Invalid JSON response: {content[:200].decode(errors='replace')}"
+        ) from exc
+
+    if status_code >= 400:
+        error_response: ErrorResponse = data  # type: ignore[assignment]
+        error = error_response.get("error", {})
+        message = error.get("message", f"Request failed with status {status_code}")
+        error_code = error.get("code")
+        details = error.get("details")
+
+        retry_after = None
+        if status_code == 429:
+            retry_after_header = headers.get("Retry-After") or headers.get(
+                "retry-after"
+            )
+            if retry_after_header:
+                with contextlib.suppress(ValueError):
+                    retry_after = int(retry_after_header)
+
+        raise_for_status(
+            status_code,
+            message,
+            request_id=request_id,
+            error_code=error_code,
+            details=details,
+            retry_after=retry_after,
+        )
+
+    return data  # type: ignore[return-value]
+
+
 class Request(Generic[T]):
     """Handles API request execution and response parsing."""
 
@@ -50,50 +110,8 @@ class Request(Generic[T]):
         status_code: int,
         headers: Mapping[str, str],
     ) -> T:
-        """Parse API response and handle errors."""
-        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
-
-        try:
-            data = json.loads(content) if content else {}
-        except json.JSONDecodeError as exc:
-            if status_code >= 400:
-                raise_for_status(
-                    status_code,
-                    f"Request failed with status {status_code}",
-                    request_id=request_id,
-                )
-            raise OMOPHubError(
-                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
-            ) from exc
-
-        # Handle error responses
-        if status_code >= 400:
-            error_response: ErrorResponse = data  # type: ignore[assignment]
-            error = error_response.get("error", {})
-            message = error.get("message", f"Request failed with status {status_code}")
-            error_code = error.get("code")
-            details = error.get("details")
-
-            # Check for rate limit retry-after
-            retry_after = None
-            if status_code == 429:
-                retry_after_header = headers.get("Retry-After") or headers.get(
-                    "retry-after"
-                )
-                if retry_after_header:
-                    with contextlib.suppress(ValueError):
-                        retry_after = int(retry_after_header)
-
-            raise_for_status(
-                status_code,
-                message,
-                request_id=request_id,
-                error_code=error_code,
-                details=details,
-                retry_after=retry_after,
-            )
-
-        # Return successful response data
+        """Parse API response, raise on errors, return the ``data`` field."""
+        data = _parse_and_raise(content, status_code, headers)
         response: APIResponse = data  # type: ignore[assignment]
         return response.get("data", data)
 
@@ -103,55 +121,8 @@ class Request(Generic[T]):
         status_code: int,
         headers: Mapping[str, str],
     ) -> dict[str, Any]:
-        """Parse API response and return full response dict with meta.
-
-        Unlike _parse_response which extracts just the 'data' field,
-        this method returns the complete response including 'meta' for pagination.
-        """
-        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
-
-        try:
-            data = json.loads(content) if content else {}
-        except json.JSONDecodeError as exc:
-            if status_code >= 400:
-                raise_for_status(
-                    status_code,
-                    f"Request failed with status {status_code}",
-                    request_id=request_id,
-                )
-            raise OMOPHubError(
-                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
-            ) from exc
-
-        # Handle error responses
-        if status_code >= 400:
-            error_response: ErrorResponse = data  # type: ignore[assignment]
-            error = error_response.get("error", {})
-            message = error.get("message", f"Request failed with status {status_code}")
-            error_code = error.get("code")
-            details = error.get("details")
-
-            # Check for rate limit retry-after
-            retry_after = None
-            if status_code == 429:
-                retry_after_header = headers.get("Retry-After") or headers.get(
-                    "retry-after"
-                )
-                if retry_after_header:
-                    with contextlib.suppress(ValueError):
-                        retry_after = int(retry_after_header)
-
-            raise_for_status(
-                status_code,
-                message,
-                request_id=request_id,
-                error_code=error_code,
-                details=details,
-                retry_after=retry_after,
-            )
-
-        # Return full response dict (includes 'data' and 'meta')
-        return data
+        """Parse API response, raise on errors, return the full dict with ``meta``."""
+        return _parse_and_raise(content, status_code, headers)
 
     def get(
         self,
@@ -238,50 +209,8 @@ class AsyncRequest(Generic[T]):
         status_code: int,
         headers: Mapping[str, str],
     ) -> T:
-        """Parse API response and handle errors."""
-        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
-
-        try:
-            data = json.loads(content) if content else {}
-        except json.JSONDecodeError as exc:
-            if status_code >= 400:
-                raise_for_status(
-                    status_code,
-                    f"Request failed with status {status_code}",
-                    request_id=request_id,
-                )
-            raise OMOPHubError(
-                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
-            ) from exc
-
-        # Handle error responses
-        if status_code >= 400:
-            error_response: ErrorResponse = data  # type: ignore[assignment]
-            error = error_response.get("error", {})
-            message = error.get("message", f"Request failed with status {status_code}")
-            error_code = error.get("code")
-            details = error.get("details")
-
-            # Check for rate limit retry-after
-            retry_after = None
-            if status_code == 429:
-                retry_after_header = headers.get("Retry-After") or headers.get(
-                    "retry-after"
-                )
-                if retry_after_header:
-                    with contextlib.suppress(ValueError):
-                        retry_after = int(retry_after_header)
-
-            raise_for_status(
-                status_code,
-                message,
-                request_id=request_id,
-                error_code=error_code,
-                details=details,
-                retry_after=retry_after,
-            )
-
-        # Return successful response data
+        """Parse API response, raise on errors, return the ``data`` field."""
+        data = _parse_and_raise(content, status_code, headers)
         response: APIResponse = data  # type: ignore[assignment]
         return response.get("data", data)
 
@@ -291,55 +220,8 @@ class AsyncRequest(Generic[T]):
         status_code: int,
         headers: Mapping[str, str],
     ) -> dict[str, Any]:
-        """Parse API response and return full response dict with meta.
-
-        Unlike _parse_response which extracts just the 'data' field,
-        this method returns the complete response including 'meta' for pagination.
-        """
-        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
-
-        try:
-            data = json.loads(content) if content else {}
-        except json.JSONDecodeError as exc:
-            if status_code >= 400:
-                raise_for_status(
-                    status_code,
-                    f"Request failed with status {status_code}",
-                    request_id=request_id,
-                )
-            raise OMOPHubError(
-                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
-            ) from exc
-
-        # Handle error responses
-        if status_code >= 400:
-            error_response: ErrorResponse = data  # type: ignore[assignment]
-            error = error_response.get("error", {})
-            message = error.get("message", f"Request failed with status {status_code}")
-            error_code = error.get("code")
-            details = error.get("details")
-
-            # Check for rate limit retry-after
-            retry_after = None
-            if status_code == 429:
-                retry_after_header = headers.get("Retry-After") or headers.get(
-                    "retry-after"
-                )
-                if retry_after_header:
-                    with contextlib.suppress(ValueError):
-                        retry_after = int(retry_after_header)
-
-            raise_for_status(
-                status_code,
-                message,
-                request_id=request_id,
-                error_code=error_code,
-                details=details,
-                retry_after=retry_after,
-            )
-
-        # Return full response dict (includes 'data' and 'meta')
-        return data
+        """Parse API response, raise on errors, return the full dict with ``meta``."""
+        return _parse_and_raise(content, status_code, headers)
 
     async def get(
         self,

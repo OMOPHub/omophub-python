@@ -117,7 +117,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/omopHub/omophub-python/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/omopHub/omophub-python/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/omopHub/omophub-python/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/omopHub/omophub-python/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/omopHub/omophub-python/compare/v1.3.0...v1.3.1
