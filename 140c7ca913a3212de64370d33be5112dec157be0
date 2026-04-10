@@ -1,0 +1,35 @@
+src/omophub/types/fhir.py
+  995c8e6367b1e02f 1-80
+src/omophub/types/__init__.py
+  995c8e6367b1e02f 19-27,94-98,108,110
+src/omophub/_client.py
+  995c8e6367b1e02f 20,101-108,240-247
+tests/unit/resources/test_fhir.py
+  995c8e6367b1e02f 1-441
+CHANGELOG.md
+  995c8e6367b1e02f 12
+src/omophub/resources/fhir.py
+  995c8e6367b1e02f 1-272
+tests/integration/test_fhir.py
+  995c8e6367b1e02f 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "140c7ca913a3212de64370d33be5112dec157be0",
+  "prompts": {
+    "995c8e6367b1e02f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea546814-6533-459a-8829-c1e8c71caab6",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub",
+      "messages": [],
+      "total_additions": 911,
+      "total_deletions": 1,
+      "accepted_lines": 911,
+      "overriden_lines": 0
+    }
+  }
+}
