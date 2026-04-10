@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlencode
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 
     from ._types import PaginationMeta
 
@@ -106,7 +106,7 @@ def paginate_sync(
 
 
 async def paginate_async(
-    fetch_page: Callable[[int, int], tuple[list[T], PaginationMeta | None]],
+    fetch_page: Callable[[int, int], Awaitable[tuple[list[T], PaginationMeta | None]]],
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> AsyncIterator[T]:
     """Create an async iterator that auto-paginates through results.
@@ -121,12 +121,7 @@ async def paginate_async(
     page = 1
 
     while True:
-        # Note: fetch_page should be an async function
-        result = fetch_page(page, page_size)
-        if hasattr(result, "__await__"):
-            items, meta = await result  # type: ignore
-        else:
-            items, meta = result
+        items, meta = await fetch_page(page, page_size)
 
         for item in items:
             yield item

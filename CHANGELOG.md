@@ -5,11 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-04-10
+
+### Added
+
+- **FHIR-to-OMOP Concept Resolver** (`client.fhir`): Translate FHIR coded values into OMOP standard concepts, CDM target tables, and optional Phoebe recommendations in a single API call.
+  - `resolve()`: Resolve a single FHIR `Coding` (system URI + code) or text-only input via semantic search fallback. Returns the standard concept, target CDM table, domain alignment check, and optional mapping quality signal.
+  - `resolve_batch()`: Batch-resolve up to 100 FHIR codings per request with inline per-item error reporting. Failed items do not fail the batch.
+  - `resolve_codeable_concept()`: Resolve a FHIR `CodeableConcept` with multiple codings. Automatically picks the best match per OHDSI vocabulary preference (SNOMED > RxNorm > LOINC > CVX > ICD-10). Falls back to the `text` field via semantic search when no coding resolves.
+- New TypedDict types for FHIR resolver: `FhirResolveResult`, `FhirResolution`, `FhirBatchResult`, `FhirBatchSummary`, `FhirCodeableConceptResult`, `ResolvedConcept`, `RecommendedConceptOutput`.
+- Both sync (`OMOPHub`) and async (`AsyncOMOPHub`) clients support FHIR resolver methods via `client.fhir.*`.
+
+### Changed
+
+- **Extracted shared response parsing** (`_request.py`): The duplicated JSON decode / error-handling / rate-limit-retry logic across `Request._parse_response`, `Request._parse_response_raw`, `AsyncRequest._parse_response`, and `AsyncRequest._parse_response_raw` (4 copies of ~50 lines each) is now a single `_parse_and_raise()` module-level function. All four methods delegate to it, eliminating the risk of divergence bugs.
+- **Fixed `paginate_async` signature** (`_pagination.py`): The type hint now correctly declares `Callable[[int, int], Awaitable[tuple[...]]]` instead of `Callable[[int, int], tuple[...]]`, and the runtime `hasattr(__await__)` duck-typing hack has been replaced with a clean `await`.
+- **`AsyncSearch.semantic_iter`** now delegates to `paginate_async` instead of manually reimplementing the pagination loop, matching the sync `semantic_iter` which already uses `paginate_sync`.
+
+### Fixed
+
+- Python prerequisite in CONTRIBUTING.md corrected from `3.9+` to `3.10+` (matching `pyproject.toml`).
+- `__all__` in `types/__init__.py` sorted per RUF022.
+
 ## [1.5.1] - 2026-04-08
 
 ### Fixed
 
-- **Rate-limit handling**: HTTP client now respects the `Retry-After` header on `429 Too Many Requests` responses and applies exponential backoff with jitter on retries. Previous versions retried only on `502/503/504` with a fixed `2^attempt * 0.5s` schedule and did not back off on `429` at all, so a client that hit the server's rate limit at high volume could burn through thousands of failed requests in a tight loop. The new behavior:
+- **Rate-limit handling**: HTTP client now respects the `Retry-After` header on `429 Too Many Requests` responses and applies exponential backoff with jitter on retries. Previous versions retried only on `502/503/504` with a fixed `2^attempt * 0.5s` schedule and did not back off on `429` at all, so a client that hit the server's rate limit at high volume could burn through thousands of failed requests in a tight loop. The client now honors `Retry-After`, uses exponential backoff with jitter, respects the configured `max_retries`, and caps backoff at 30 seconds.
 - Updated `examples/search_concepts.py` to reflect current API.
 
 ## [1.5.0] - 2026-03-26
@@ -117,7 +139,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/omopHub/omophub-python/compare/v1.5.1...v1.6.0
+[1.5.1]: https://github.com/omopHub/omophub-python/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/omopHub/omophub-python/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/omopHub/omophub-python/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/omopHub/omophub-python/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/omopHub/omophub-python/compare/v1.3.0...v1.3.1

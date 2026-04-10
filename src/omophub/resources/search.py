@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
-from .._pagination import DEFAULT_PAGE_SIZE, paginate_sync
+from .._pagination import DEFAULT_PAGE_SIZE, paginate_async, paginate_sync
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
@@ -670,13 +670,14 @@ class AsyncSearch:
         page_size: int = DEFAULT_PAGE_SIZE,
     ) -> AsyncIterator[SemanticSearchResult]:
         """Iterate through all semantic search results with auto-pagination."""
-        page = 1
 
-        while True:
+        async def fetch_page(
+            page: int, size: int
+        ) -> tuple[list[SemanticSearchResult], PaginationMeta | None]:
             params: dict[str, Any] = {
                 "query": query,
                 "page": page,
-                "page_size": page_size,
+                "page_size": size,
             }
             if vocabulary_ids:
                 params["vocabulary_ids"] = ",".join(vocabulary_ids)
@@ -694,18 +695,13 @@ class AsyncSearch:
             )
 
             data = result.get("data", [])
-            results: list[SemanticSearchResult] = (
-                data.get("results", data) if isinstance(data, dict) else data
-            )
-            meta: PaginationMeta | None = result.get("meta", {}).get("pagination")
+            results = data.get("results", data) if isinstance(data, dict) else data
+            meta = result.get("meta", {}).get("pagination")
+            return results, meta
 
-            for item in results:
-                yield item
-
-            if meta is None or not meta.get("has_next", False):
-                break
-
-            page += 1
+        item: SemanticSearchResult
+        async for item in paginate_async(fetch_page, page_size):
+            yield item
 
     async def bulk_basic(
         self,
