@@ -1,0 +1,31 @@
+src/omophub/_request.py
+  995c8e6367b1e02f 20-79,113-114,124-125,212-213,223-224
+src/omophub/resources/search.py
+  995c8e6367b1e02f 7,674-676,680,698-700,702-703
+CHANGELOG.md
+  995c8e6367b1e02f 120-122
+CONTRIBUTING.md
+  995c8e6367b1e02f 56
+src/omophub/types/__init__.py
+  995c8e6367b1e02f 113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "55255df3dec559dfd72b4e525723fcbf86c374e1",
+  "prompts": {
+    "995c8e6367b1e02f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea546814-6533-459a-8829-c1e8c71caab6",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "alex-omophub",
+      "messages": [],
+      "total_additions": 84,
+      "total_deletions": 205,
+      "accepted_lines": 84,
+      "overriden_lines": 0
+    }
+  }
+}
