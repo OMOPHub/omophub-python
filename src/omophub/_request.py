@@ -74,7 +74,7 @@ def _parse_and_raise(
             retry_after=retry_after,
         )
 
-    return data  # type: ignore[return-value]
+    return data
 
 
 class Request(Generic[T]):

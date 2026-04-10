@@ -699,6 +699,7 @@ class AsyncSearch:
             meta = result.get("meta", {}).get("pagination")
             return results, meta
 
+        item: SemanticSearchResult
         async for item in paginate_async(fetch_page, page_size):
             yield item
 

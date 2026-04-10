@@ -354,6 +354,25 @@ class TestFhirSync:
         assert body["include_quality"] is True
 
     @respx.mock
+    def test_resolve_codeable_concept_minimal(self, sync_client: OMOPHub, base_url: str) -> None:
+        """CodeableConcept with no optional flags (covers False branches)."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        sync_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert "text" not in body
+        assert "resource_type" not in body
+        assert "include_recommendations" not in body
+        assert "include_quality" not in body
+
+    @respx.mock
     def test_resolve_sends_correct_body(self, sync_client: OMOPHub, base_url: str) -> None:
         """Verify the POST body includes only non-None parameters."""
         route = respx.post(f"{base_url}/fhir/resolve").mock(
@@ -439,3 +458,118 @@ class TestFhirAsync:
         )
 
         assert result["best_match"] is not None
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_vocabulary_id_bypass(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async resolve with vocabulary_id exercises the bypass branch."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=ICD10_MAPPED_RESPONSE)
+        )
+
+        result = await async_client.fhir.resolve(
+            vocabulary_id="ICD10CM",
+            code="E11.9",
+            include_recommendations=True,
+            recommendations_limit=3,
+            include_quality=True,
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["vocabulary_id"] == "ICD10CM"
+        assert body["include_recommendations"] is True
+        assert body["recommendations_limit"] == 3
+        assert body["include_quality"] is True
+        assert "resolution" in result
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_batch_all_flags(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async batch with include_recommendations exercises that branch."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+            resource_type="Condition",
+            include_recommendations=True,
+            recommendations_limit=5,
+            include_quality=True,
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["include_recommendations"] is True
+        assert body["recommendations_limit"] == 5
+        assert body["include_quality"] is True
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_fhir_property_cached(self, async_client: AsyncOMOPHub, base_url: str) -> None:
+        """Accessing client.fhir twice returns the same cached instance."""
+        fhir1 = async_client.fhir
+        fhir2 = async_client.fhir
+        assert fhir1 is fhir2
+
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_codeable_minimal(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async codeable concept with no optional flags (covers False branches)."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert "text" not in body
+        assert "resource_type" not in body
+        assert "include_recommendations" not in body
+        assert "include_quality" not in body
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_batch_minimal(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async batch with no optional flags (covers False branches)."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert "resource_type" not in body
+        assert "include_recommendations" not in body
+        assert "include_quality" not in body
+
+
+class TestFhirPropertyCaching:
+    """Test lazy-property cache hit on both client types."""
+
+    @respx.mock
+    def test_sync_fhir_property_cached(self, sync_client: OMOPHub) -> None:
+        """Accessing client.fhir twice returns the same cached instance."""
+        fhir1 = sync_client.fhir
+        fhir2 = sync_client.fhir
+        assert fhir1 is fhir2
