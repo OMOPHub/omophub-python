@@ -58,6 +58,46 @@ mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabulary="SN
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
 ```
 
+## FHIR-to-OMOP Resolution
+
+Resolve FHIR coded values to OMOP standard concepts in one call:
+
+```python
+# Single FHIR Coding → OMOP concept + CDM target table
+result = client.fhir.resolve(
+    system="http://snomed.info/sct",
+    code="44054006",
+    resource_type="Condition",
+)
+print(result["resolution"]["target_table"])  # "condition_occurrence"
+print(result["resolution"]["mapping_type"])  # "direct"
+
+# ICD-10-CM → traverses "Maps to" automatically
+result = client.fhir.resolve(
+    system="http://hl7.org/fhir/sid/icd-10-cm",
+    code="E11.9",
+)
+print(result["resolution"]["standard_concept"]["vocabulary_id"])  # "SNOMED"
+
+# Batch resolve up to 100 codings
+batch = client.fhir.resolve_batch([
+    {"system": "http://snomed.info/sct", "code": "44054006"},
+    {"system": "http://loinc.org", "code": "2339-0"},
+    {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197696"},
+])
+print(f"Resolved {batch['summary']['resolved']}/{batch['summary']['total']}")
+
+# CodeableConcept with vocabulary preference (SNOMED wins over ICD-10)
+result = client.fhir.resolve_codeable_concept(
+    coding=[
+        {"system": "http://snomed.info/sct", "code": "44054006"},
+        {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9"},
+    ],
+    resource_type="Condition",
+)
+print(result["best_match"]["resolution"]["source_concept"]["vocabulary_id"])  # "SNOMED"
+```
+
 ## Semantic Search
 
 Use natural language queries to find concepts using neural embeddings:
@@ -200,6 +240,7 @@ suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_si
 | `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
 | `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |
 | `domains` | Domain information | `list()`, `get()`, `concepts()` |
+| `fhir` | FHIR-to-OMOP resolution | `resolve()`, `resolve_batch()`, `resolve_codeable_concept()` |
 
 ## Configuration
 
