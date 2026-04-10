@@ -53,7 +53,7 @@ Feature requests are welcome! Please open an issue with:
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - pip
 
 ### Installation

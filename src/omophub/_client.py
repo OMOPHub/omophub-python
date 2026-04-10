@@ -17,6 +17,7 @@ from ._http import AsyncHTTPClientImpl, SyncHTTPClient
 from ._request import AsyncRequest, Request
 from .resources.concepts import AsyncConcepts, Concepts
 from .resources.domains import AsyncDomains, Domains
+from .resources.fhir import AsyncFhir, Fhir
 from .resources.hierarchy import AsyncHierarchy, Hierarchy
 from .resources.mappings import AsyncMappings, Mappings
 from .resources.relationships import AsyncRelationships, Relationships
@@ -97,6 +98,14 @@ class OMOPHub:
         self._mappings: Mappings | None = None
         self._vocabularies: Vocabularies | None = None
         self._domains: Domains | None = None
+        self._fhir: Fhir | None = None
+
+    @property
+    def fhir(self) -> Fhir:
+        """Access the FHIR resolver resource."""
+        if self._fhir is None:
+            self._fhir = Fhir(self._request)
+        return self._fhir
 
     @property
     def concepts(self) -> Concepts:
@@ -228,6 +237,14 @@ class AsyncOMOPHub:
         self._mappings: AsyncMappings | None = None
         self._vocabularies: AsyncVocabularies | None = None
         self._domains: AsyncDomains | None = None
+        self._fhir: AsyncFhir | None = None
+
+    @property
+    def fhir(self) -> AsyncFhir:
+        """Access the FHIR resolver resource."""
+        if self._fhir is None:
+            self._fhir = AsyncFhir(self._request)
+        return self._fhir
 
     @property
     def concepts(self) -> AsyncConcepts:
