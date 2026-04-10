@@ -24,15 +24,28 @@ class VocabularyDomain(TypedDict):
     classification_count: NotRequired[int]
 
 
-class VocabularyStats(TypedDict):
-    """Vocabulary statistics."""
+class DomainDistribution(TypedDict):
+    """Domain distribution within vocabulary statistics."""
 
+    domain_id: str
+    domain_name: str
+    concept_count: int
+
+
+class VocabularyStats(TypedDict):
+    """Vocabulary statistics from /vocabularies/{vocabulary_id}/stats endpoint."""
+
+    vocabulary_id: str
+    vocabulary_name: str
     total_concepts: int
     standard_concepts: NotRequired[int]
     classification_concepts: NotRequired[int]
     invalid_concepts: NotRequired[int]
-    relationships_count: NotRequired[int]
-    synonyms_count: NotRequired[int]
+    active_concepts: NotRequired[int]
+    valid_start_date: NotRequired[str]
+    valid_end_date: NotRequired[str]
+    last_updated: NotRequired[str]
+    domain_distribution: NotRequired[list[DomainDistribution]]
 
 
 class Vocabulary(TypedDict):

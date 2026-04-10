@@ -40,7 +40,7 @@ def get_descendants() -> None:
     result = client.hierarchy.descendants(
         concept_id,
         max_levels=2,
-        standard_only=True,
+        include_invalid=False,
     )
 
     concept = result.get("concept", {})
@@ -59,7 +59,7 @@ def explore_relationships() -> None:
     # Aspirin
     concept_id = 1112807
 
-    result = client.concepts.relationships(concept_id, page_size=20)
+    result = client.concepts.relationships(concept_id)
 
     relationships = result.get("relationships", result)
     summary = result.get("relationship_summary", {})

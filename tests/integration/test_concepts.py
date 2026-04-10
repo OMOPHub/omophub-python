@@ -61,7 +61,7 @@ class TestConceptsIntegration:
 
     def test_suggest_concepts(self, integration_client: OMOPHub) -> None:
         """Get concept suggestions."""
-        result = integration_client.concepts.suggest("diabetes", limit=5)
+        result = integration_client.concepts.suggest("diabetes", page_size=5)
 
         # Result is a list of concept objects with concept_name field
         suggestions = extract_data(result, "suggestions")
@@ -81,9 +81,9 @@ class TestConceptsIntegration:
         """Get concept suggestions with vocabulary filter."""
         result = integration_client.concepts.suggest(
             "aspirin",
-            vocabulary="RxNorm",
-            domain="Drug",
-            limit=10,
+            vocabulary_ids=["RxNorm"],
+            domain_ids=["Drug"],
+            page_size=10,
         )
 
         # Should get at least one result or empty list
@@ -94,7 +94,7 @@ class TestConceptsIntegration:
         """Get related concepts."""
         result = integration_client.concepts.related(
             DIABETES_CONCEPT_ID,
-            max_results=10,
+            page_size=10,
         )
 
         # Should have related_concepts key
@@ -105,7 +105,6 @@ class TestConceptsIntegration:
         """Get concept relationships."""
         result = integration_client.concepts.relationships(
             DIABETES_CONCEPT_ID,
-            page_size=20,
         )
 
         # Should have relationships

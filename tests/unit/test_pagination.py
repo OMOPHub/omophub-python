@@ -56,7 +56,9 @@ class TestPaginationHelper:
 
     def test_build_paginated_path_without_existing_query(self) -> None:
         """Test building path without existing query string."""
-        result = PaginationHelper.build_paginated_path("/concepts", page=1, page_size=20)
+        result = PaginationHelper.build_paginated_path(
+            "/concepts", page=1, page_size=20
+        )
         assert result.startswith("/concepts?")
         assert "page=1" in result
 

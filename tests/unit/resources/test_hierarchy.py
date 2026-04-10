@@ -17,14 +17,113 @@ class TestHierarchyResource:
     """Tests for the synchronous Hierarchy resource."""
 
     @respx.mock
+    def test_get_hierarchy(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test getting complete hierarchy for a concept."""
+        hierarchy_response = {
+            "success": True,
+            "data": {
+                "ancestors": [{"concept_id": 201820, "level": 1}],
+                "descendants": [{"concept_id": 201830, "level": 1}],
+                "summary": {"total_ancestors": 1, "total_descendants": 1},
+            },
+        }
+        respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(200, json=hierarchy_response)
+        )
+
+        result = sync_client.hierarchy.get(201826)
+        assert "ancestors" in result
+        assert "descendants" in result
+
+    @respx.mock
+    def test_get_hierarchy_with_options(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test getting hierarchy with all options."""
+        route = respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": {"ancestors": [], "descendants": []}},
+            )
+        )
+
+        sync_client.hierarchy.get(
+            201826,
+            format="flat",
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
+            max_levels=15,
+            max_results=100,
+            relationship_types=["Is a", "Subsumes"],
+            include_invalid=True,
+        )
+
+        url_str = str(route.calls[0].request.url)
+        assert "format=flat" in url_str
+        assert "vocabulary_ids=SNOMED%2CICD10CM" in url_str
+        assert "domain_ids=Condition" in url_str
+        assert "max_levels=15" in url_str
+        assert "max_results=100" in url_str
+        assert "relationship_types=Is+a%2CSubsumes" in url_str
+        assert "include_invalid=true" in url_str
+
+    @respx.mock
+    def test_get_hierarchy_max_levels_capped(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test that max_levels is capped at 20."""
+        route = respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": {"ancestors": [], "descendants": []}},
+            )
+        )
+
+        # Request max_levels=50, should be capped to 20
+        sync_client.hierarchy.get(201826, max_levels=50)
+
+        url_str = str(route.calls[0].request.url)
+        assert "max_levels=20" in url_str
+
+    @respx.mock
+    def test_get_hierarchy_graph_format(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test getting hierarchy in graph format."""
+        graph_response = {
+            "success": True,
+            "data": {
+                "nodes": [{"id": 201826, "label": "Type 2 diabetes"}],
+                "edges": [{"source": 201826, "target": 201820}],
+            },
+        }
+        route = respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(200, json=graph_response)
+        )
+
+        result = sync_client.hierarchy.get(201826, format="graph")
+
+        url_str = str(route.calls[0].request.url)
+        assert "format=graph" in url_str
+        assert "nodes" in result
+
+    @respx.mock
     def test_get_ancestors(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test getting concept ancestors."""
         ancestors_response = {
             "success": True,
             "data": {
                 "ancestors": [
-                    {"concept_id": 201820, "concept_name": "Diabetes mellitus", "level": 1},
-                    {"concept_id": 4000, "concept_name": "Endocrine disorder", "level": 2},
+                    {
+                        "concept_id": 201820,
+                        "concept_name": "Diabetes mellitus",
+                        "level": 1,
+                    },
+                    {
+                        "concept_id": 4000,
+                        "concept_name": "Endocrine disorder",
+                        "level": 2,
+                    },
                 ],
                 "summary": {"total_ancestors": 2, "max_level": 2},
             },
@@ -37,7 +136,9 @@ class TestHierarchyResource:
         assert "ancestors" in result
 
     @respx.mock
-    def test_get_ancestors_with_options(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_get_ancestors_with_options(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test getting ancestors with all options."""
         route = respx.get(f"{base_url}/concepts/201826/ancestors").mock(
             return_value=Response(
@@ -47,25 +148,23 @@ class TestHierarchyResource:
 
         sync_client.hierarchy.ancestors(
             201826,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=5,
             relationship_types=["Is a", "Subsumes"],
             include_paths=True,
             include_distance=True,
-            standard_only=True,
-            include_deprecated=True,
+            include_invalid=True,
             page=2,
             page_size=50,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=5" in url_str
         assert "relationship_types=Is+a%2CSubsumes" in url_str
         assert "include_paths=true" in url_str
         assert "include_distance=true" in url_str
-        assert "standard_only=true" in url_str
-        assert "include_deprecated=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "page=2" in url_str
         assert "page_size=50" in url_str
 
@@ -101,28 +200,25 @@ class TestHierarchyResource:
 
         sync_client.hierarchy.descendants(
             201820,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=3,
             relationship_types=["Is a"],
             include_distance=True,
-            standard_only=True,
-            include_deprecated=True,
+            include_paths=True,
+            include_invalid=True,
             domain_ids=["Condition"],
-            concept_class_ids=["Clinical Finding"],
-            include_synonyms=True,
             page=1,
             page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=3" in url_str
         assert "relationship_types=Is+a" in url_str
         assert "include_distance=true" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_paths=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "domain_ids=Condition" in url_str
-        assert "concept_class_ids=Clinical+Finding" in url_str
-        assert "include_synonyms=true" in url_str
         assert "page=1" in url_str
         assert "page_size=100" in url_str
 
@@ -130,23 +226,94 @@ class TestHierarchyResource:
     def test_get_descendants_max_levels_capped(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
-        """Test that max_levels is capped at 10."""
+        """Test that max_levels is capped at 20."""
         route = respx.get(f"{base_url}/concepts/201820/descendants").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"descendants": []}}
             )
         )
 
-        # Request max_levels=50, should be capped to 10
+        # Request max_levels=50, should be capped to 20
         sync_client.hierarchy.descendants(201820, max_levels=50)
 
         url_str = str(route.calls[0].request.url)
-        assert "max_levels=10" in url_str
-
+        assert "max_levels=20" in url_str
 
 
 class TestAsyncHierarchyResource:
     """Tests for the asynchronous AsyncHierarchy resource."""
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_get_hierarchy(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async getting complete hierarchy."""
+        hierarchy_response = {
+            "success": True,
+            "data": {
+                "ancestors": [{"concept_id": 201820, "level": 1}],
+                "descendants": [{"concept_id": 201830, "level": 1}],
+            },
+        }
+        respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(200, json=hierarchy_response)
+        )
+
+        result = await async_client.hierarchy.get(201826)
+        assert "ancestors" in result
+        assert "descendants" in result
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_get_hierarchy_with_options(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async hierarchy with all options."""
+        route = respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": {"ancestors": [], "descendants": []}},
+            )
+        )
+
+        await async_client.hierarchy.get(
+            201826,
+            format="graph",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition", "Drug"],
+            max_levels=10,
+            max_results=50,
+            relationship_types=["Is a"],
+            include_invalid=True,
+        )
+
+        url_str = str(route.calls[0].request.url)
+        assert "format=graph" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
+        assert "domain_ids=Condition%2CDrug" in url_str
+        assert "max_levels=10" in url_str
+        assert "max_results=50" in url_str
+        assert "relationship_types=Is+a" in url_str
+        assert "include_invalid=true" in url_str
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_get_hierarchy_max_levels_capped(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async hierarchy max_levels capped at 20."""
+        route = respx.get(f"{base_url}/concepts/201826/hierarchy").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": {"ancestors": [], "descendants": []}},
+            )
+        )
+
+        await async_client.hierarchy.get(201826, max_levels=100)
+
+        url_str = str(route.calls[0].request.url)
+        assert "max_levels=20" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -177,19 +344,19 @@ class TestAsyncHierarchyResource:
 
         await async_client.hierarchy.ancestors(
             201826,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=3,
             relationship_types=["Is a"],
             include_paths=True,
-            standard_only=True,
+            include_invalid=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "max_levels=3" in url_str
         assert "include_paths=true" in url_str
         assert "relationship_types=Is+a" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
 
     @pytest.mark.asyncio
     @respx.mock
@@ -220,19 +387,16 @@ class TestAsyncHierarchyResource:
 
         await async_client.hierarchy.descendants(
             201820,
-            vocabulary_id="SNOMED",
+            vocabulary_ids=["SNOMED"],
             max_levels=5,
             domain_ids=["Condition"],
-            concept_class_ids=["Clinical Finding"],
-            standard_only=True,
-            include_synonyms=True,
+            include_invalid=True,
+            include_paths=True,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "vocabulary_id=SNOMED" in url_str
+        assert "vocabulary_ids=SNOMED" in url_str
         assert "domain_ids=Condition" in url_str
-        assert "standard_only=true" in url_str
+        assert "include_invalid=true" in url_str
         assert "max_levels=5" in url_str
-        assert "concept_class_ids=Clinical+Finding" in url_str or "concept_class_ids=Clinical%20Finding" in url_str
-        assert "include_synonyms=true" in url_str
-
+        assert "include_paths=true" in url_str

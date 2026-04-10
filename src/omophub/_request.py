@@ -97,6 +97,62 @@ class Request(Generic[T]):
         response: APIResponse = data  # type: ignore[assignment]
         return response.get("data", data)
 
+    def _parse_response_raw(
+        self,
+        content: bytes,
+        status_code: int,
+        headers: Mapping[str, str],
+    ) -> dict[str, Any]:
+        """Parse API response and return full response dict with meta.
+
+        Unlike _parse_response which extracts just the 'data' field,
+        this method returns the complete response including 'meta' for pagination.
+        """
+        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
+
+        try:
+            data = json.loads(content) if content else {}
+        except json.JSONDecodeError as exc:
+            if status_code >= 400:
+                raise_for_status(
+                    status_code,
+                    f"Request failed with status {status_code}",
+                    request_id=request_id,
+                )
+            raise OMOPHubError(
+                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
+            ) from exc
+
+        # Handle error responses
+        if status_code >= 400:
+            error_response: ErrorResponse = data  # type: ignore[assignment]
+            error = error_response.get("error", {})
+            message = error.get("message", f"Request failed with status {status_code}")
+            error_code = error.get("code")
+            details = error.get("details")
+
+            # Check for rate limit retry-after
+            retry_after = None
+            if status_code == 429:
+                retry_after_header = headers.get("Retry-After") or headers.get(
+                    "retry-after"
+                )
+                if retry_after_header:
+                    with contextlib.suppress(ValueError):
+                        retry_after = int(retry_after_header)
+
+            raise_for_status(
+                status_code,
+                message,
+                request_id=request_id,
+                error_code=error_code,
+                details=details,
+                retry_after=retry_after,
+            )
+
+        # Return full response dict (includes 'data' and 'meta')
+        return data
+
     def get(
         self,
         path: str,
@@ -111,6 +167,25 @@ class Request(Generic[T]):
             params=params,
         )
         return self._parse_response(content, status_code, headers)
+
+    def get_raw(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make a GET request and return full response with meta.
+
+        Unlike get() which extracts just the 'data' field,
+        this method returns the complete response including 'meta' for pagination.
+        """
+        url = self._build_url(path)
+        content, status_code, headers = self._http_client.request(
+            "GET",
+            url,
+            headers=self._get_auth_headers(),
+            params=params,
+        )
+        return self._parse_response_raw(content, status_code, headers)
 
     def post(
         self,
@@ -210,6 +285,62 @@ class AsyncRequest(Generic[T]):
         response: APIResponse = data  # type: ignore[assignment]
         return response.get("data", data)
 
+    def _parse_response_raw(
+        self,
+        content: bytes,
+        status_code: int,
+        headers: Mapping[str, str],
+    ) -> dict[str, Any]:
+        """Parse API response and return full response dict with meta.
+
+        Unlike _parse_response which extracts just the 'data' field,
+        this method returns the complete response including 'meta' for pagination.
+        """
+        request_id = headers.get("X-Request-Id") or headers.get("x-request-id")
+
+        try:
+            data = json.loads(content) if content else {}
+        except json.JSONDecodeError as exc:
+            if status_code >= 400:
+                raise_for_status(
+                    status_code,
+                    f"Request failed with status {status_code}",
+                    request_id=request_id,
+                )
+            raise OMOPHubError(
+                f"Invalid JSON response: {content[:200].decode(errors='replace')}"
+            ) from exc
+
+        # Handle error responses
+        if status_code >= 400:
+            error_response: ErrorResponse = data  # type: ignore[assignment]
+            error = error_response.get("error", {})
+            message = error.get("message", f"Request failed with status {status_code}")
+            error_code = error.get("code")
+            details = error.get("details")
+
+            # Check for rate limit retry-after
+            retry_after = None
+            if status_code == 429:
+                retry_after_header = headers.get("Retry-After") or headers.get(
+                    "retry-after"
+                )
+                if retry_after_header:
+                    with contextlib.suppress(ValueError):
+                        retry_after = int(retry_after_header)
+
+            raise_for_status(
+                status_code,
+                message,
+                request_id=request_id,
+                error_code=error_code,
+                details=details,
+                retry_after=retry_after,
+            )
+
+        # Return full response dict (includes 'data' and 'meta')
+        return data
+
     async def get(
         self,
         path: str,
@@ -224,6 +355,25 @@ class AsyncRequest(Generic[T]):
             params=params,
         )
         return self._parse_response(content, status_code, headers)
+
+    async def get_raw(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make an async GET request and return full response with meta.
+
+        Unlike get() which extracts just the 'data' field,
+        this method returns the complete response including 'meta' for pagination.
+        """
+        url = self._build_url(path)
+        content, status_code, headers = await self._http_client.request(
+            "GET",
+            url,
+            headers=self._get_auth_headers(),
+            params=params,
+        )
+        return self._parse_response_raw(content, status_code, headers)
 
     async def post(
         self,

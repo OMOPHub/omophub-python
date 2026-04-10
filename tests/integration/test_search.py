@@ -49,11 +49,59 @@ class TestSearchIntegration:
         for concept in concepts:
             assert concept.get("domain_id") == "Drug"
 
+    def test_search_with_standard_concept_filter(
+        self, integration_client: OMOPHub
+    ) -> None:
+        """Search for standard concepts only."""
+        results = integration_client.search.basic(
+            "diabetes",
+            standard_concept="S",
+            page_size=20,
+        )
+
+        concepts = extract_data(results, "concepts")
+        assert len(concepts) > 0
+        # All results should be standard concepts
+        for concept in concepts:
+            assert concept.get("standard_concept") == "S"
+
+    def test_search_with_multiple_filters_and_pagination(
+        self, integration_client: OMOPHub
+    ) -> None:
+        """Search with multiple filters to test COUNT query parameter binding.
+
+        This test specifically catches COUNT query bugs where parameter binding
+        differs between the main query and the count query. If the COUNT query
+        fails (like with missing standard_concept parameter), the API would
+        return a 500 error instead of results.
+        """
+        results = integration_client.search.basic(
+            "diabetes",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            page_size=10,
+        )
+
+        # Extract concepts - SDK may return list directly or wrapped in dict
+        concepts = extract_data(results, "concepts")
+        assert len(concepts) > 0, "Expected concepts but got empty result"
+
+        # Verify all filters applied correctly
+        for concept in concepts:
+            assert concept.get("vocabulary_id") == "SNOMED"
+            assert concept.get("domain_id") == "Condition"
+            assert concept.get("standard_concept") == "S"
+
+        # Note: The SDK extracts concepts from the response, so we verify
+        # the COUNT query worked by the fact that we got results without
+        # an error (COUNT query failure would cause HTTP 500)
+
     def test_autocomplete(self, integration_client: OMOPHub) -> None:
         """Test autocomplete suggestions."""
         result = integration_client.search.autocomplete(
             "diab",
-            max_suggestions=10,
+            page_size=10,
         )
 
         suggestions = extract_data(result, "suggestions")
@@ -76,25 +124,274 @@ class TestSearchIntegration:
             "hyper",
             vocabulary_ids=["SNOMED"],
             domains=["Condition"],
-            max_suggestions=5,
+            page_size=5,
         )
 
         suggestions = extract_data(result, "suggestions")
         assert isinstance(suggestions, list)
 
     def test_basic_iter_pagination(self, integration_client: OMOPHub) -> None:
-        """Test auto-pagination with basic_iter."""
-        # Collect first 5 concepts using iterator
+        """Test auto-pagination with basic_iter.
+
+        This test verifies that basic_iter correctly fetches multiple pages
+        of results. With page_size=2, we should be able to collect 5 concepts
+        which requires fetching at least 3 pages, proving pagination works.
+        """
+        # Collect concepts using iterator with small page size
         concepts = []
+        page_size = 2
+        max_concepts = 5
+
         for concept in integration_client.search.basic_iter(
             "diabetes",
-            page_size=2,  # Small page size to test pagination
+            page_size=page_size,  # Small page size to test pagination
         ):
             concepts.append(concept)
-            if len(concepts) >= 5:
+            if len(concepts) >= max_concepts:
                 break
 
-        assert len(concepts) == 5
+        # Should get requested number of concepts (proves pagination worked)
+        assert len(concepts) == max_concepts, (
+            f"Expected {max_concepts} concepts from paginated iterator, "
+            f"got {len(concepts)}. With page_size={page_size}, getting only "
+            f"{len(concepts)} concepts suggests pagination is broken."
+        )
+
         # All should have concept_id
         for concept in concepts:
             assert "concept_id" in concept
+
+
+@pytest.mark.integration
+class TestSemanticSearchIntegration:
+    """Integration tests for semantic search endpoints."""
+
+    def test_semantic_search_basic(self, integration_client: OMOPHub) -> None:
+        """Test basic semantic search returns results with similarity scores."""
+        result = integration_client.search.semantic(
+            "myocardial infarction", page_size=5
+        )
+
+        # SDK may return data wrapped in 'results' key or as a list
+        results = extract_data(result, "results")
+
+        # Should have results
+        assert isinstance(results, list)
+        if len(results) > 0:
+            # Each result should have similarity score
+            for r in results:
+                assert "similarity_score" in r or "score" in r
+                assert "concept_id" in r
+
+    def test_semantic_search_with_filters(self, integration_client: OMOPHub) -> None:
+        """Test semantic search with vocabulary/domain filters."""
+        result = integration_client.search.semantic(
+            "diabetes",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            threshold=0.5,
+            page_size=10,
+        )
+
+        results = extract_data(result, "results")
+
+        # If results exist, verify filters applied
+        if len(results) > 0:
+            for r in results:
+                assert r.get("vocabulary_id") == "SNOMED"
+                assert r.get("domain_id") == "Condition"
+
+    def test_semantic_search_with_threshold(self, integration_client: OMOPHub) -> None:
+        """Test that higher threshold returns fewer or equal results."""
+        result_low = integration_client.search.semantic(
+            "heart attack", threshold=0.3, page_size=20
+        )
+        result_high = integration_client.search.semantic(
+            "heart attack", threshold=0.8, page_size=20
+        )
+
+        results_low = extract_data(result_low, "results")
+        results_high = extract_data(result_high, "results")
+
+        # Guard: skip test if no results to compare
+        if not results_low:
+            pytest.skip(
+                "No results returned for low threshold - cannot test threshold comparison"
+            )
+
+        # Higher threshold should return fewer or equal results
+        assert len(results_high) <= len(results_low)
+
+    def test_semantic_iter_pagination(self, integration_client: OMOPHub) -> None:
+        """Test auto-pagination via semantic_iter."""
+        import itertools
+
+        results = list(
+            itertools.islice(
+                integration_client.search.semantic_iter("diabetes", page_size=5), 10
+            )
+        )
+
+        # Should get up to 10 results across multiple pages
+        assert len(results) > 0
+        # Each result should have required fields
+        for r in results:
+            assert "concept_id" in r
+
+    def test_similar_by_concept_id(self, integration_client: OMOPHub) -> None:
+        """Test finding similar concepts by ID."""
+        from tests.conftest import MI_CONCEPT_ID
+
+        result = integration_client.search.similar(
+            concept_id=MI_CONCEPT_ID, page_size=5
+        )
+
+        # Should have similar_concepts key or be a list
+        similar = extract_data(result, "similar_concepts")
+
+        assert isinstance(similar, list)
+        # If results exist, verify structure
+        if len(similar) > 0:
+            for concept in similar:
+                assert "concept_id" in concept
+
+    def test_similar_by_query(self, integration_client: OMOPHub) -> None:
+        """Test finding similar concepts by natural language query."""
+        result = integration_client.search.similar(
+            query="elevated blood glucose", page_size=5
+        )
+
+        similar = extract_data(result, "similar_concepts")
+
+        assert isinstance(similar, list)
+
+    def test_similar_with_algorithm(self, integration_client: OMOPHub) -> None:
+        """Test similar search with different algorithms."""
+        from tests.conftest import MI_CONCEPT_ID
+
+        result = integration_client.search.similar(
+            concept_id=MI_CONCEPT_ID,
+            algorithm="semantic",
+            similarity_threshold=0.6,
+            page_size=5,
+        )
+
+        # Verify response structure
+        assert isinstance(result, dict)
+        # May have search_metadata with algorithm info
+        metadata = result.get("search_metadata", {})
+        if metadata:
+            assert metadata.get("algorithm_used") in ["semantic", "hybrid", "lexical"]
+
+    def test_similar_with_vocabulary_filter(self, integration_client: OMOPHub) -> None:
+        """Test similar search filtered by vocabulary."""
+        from tests.conftest import DIABETES_CONCEPT_ID
+
+        result = integration_client.search.similar(
+            concept_id=DIABETES_CONCEPT_ID,
+            vocabulary_ids=["SNOMED"],
+            page_size=10,
+        )
+
+        similar = extract_data(result, "similar_concepts")
+
+        # If results, all should be from SNOMED
+        for concept in similar:
+            assert concept.get("vocabulary_id") == "SNOMED"
+
+
+@pytest.mark.integration
+class TestBulkBasicSearchIntegration:
+    """Integration tests for bulk lexical search."""
+
+    def test_bulk_basic_multiple_queries(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with multiple queries."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "q1", "query": "diabetes mellitus"},
+            {"search_id": "q2", "query": "hypertension"},
+            {"search_id": "q3", "query": "aspirin"},
+        ], defaults={"page_size": 5})
+
+        results = extract_data(result, "results")
+        assert len(results) == 3
+
+        # Verify all 3 search IDs are present with results
+        returned_ids = {item["search_id"] for item in results}
+        assert returned_ids == {"q1", "q2", "q3"}
+        for item in results:
+            assert item["status"] == "completed"
+            assert len(item["results"]) > 0
+
+    def test_bulk_basic_with_vocabulary_filter(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with shared vocabulary filter."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "snomed1", "query": "diabetes"},
+            {"search_id": "snomed2", "query": "myocardial infarction"},
+        ], defaults={"vocabulary_ids": ["SNOMED"], "page_size": 3})
+
+        results = extract_data(result, "results")
+        for item in results:
+            assert item["status"] == "completed"
+            # Verify SNOMED filter applied
+            for concept in item["results"]:
+                assert concept.get("vocabulary_id") == "SNOMED"
+
+    def test_bulk_basic_single_query(self, integration_client: OMOPHub) -> None:
+        """Test bulk basic search with a single query."""
+        result = integration_client.search.bulk_basic([
+            {"search_id": "single", "query": "metformin", "page_size": 3},
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["search_id"] == "single"
+        assert results[0]["status"] == "completed"
+
+
+@pytest.mark.integration
+class TestBulkSemanticSearchIntegration:
+    """Integration tests for bulk semantic search."""
+
+    def test_bulk_semantic_multiple_queries(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with multiple natural-language queries."""
+        result = integration_client.search.bulk_semantic([
+            {"search_id": "s1", "query": "heart failure treatment options"},
+            {"search_id": "s2", "query": "type 2 diabetes medication"},
+        ], defaults={"threshold": 0.5, "page_size": 5})
+
+        results = extract_data(result, "results")
+        assert len(results) == 2
+
+        for item in results:
+            assert item["search_id"] in ("s1", "s2")
+            assert item["status"] == "completed"
+
+    def test_bulk_semantic_with_filters(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with vocabulary and domain filters."""
+        result = integration_client.search.bulk_semantic([
+            {
+                "search_id": "filtered",
+                "query": "pain relief medication",
+                "vocabulary_ids": ["SNOMED"],
+                "page_size": 3,
+                "threshold": 0.5,
+            },
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["status"] == "completed"
+
+        # Verify SNOMED vocabulary filter was applied
+        for concept in results[0]["results"]:
+            assert concept.get("vocabulary_id") == "SNOMED"
+
+    def test_bulk_semantic_single_query(self, integration_client: OMOPHub) -> None:
+        """Test bulk semantic search with a single query."""
+        result = integration_client.search.bulk_semantic([
+            {"search_id": "one", "query": "elevated blood pressure", "threshold": 0.5},
+        ])
+
+        results = extract_data(result, "results")
+        assert len(results) == 1
+        assert results[0]["search_id"] == "one"

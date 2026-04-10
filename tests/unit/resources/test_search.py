@@ -36,12 +36,12 @@ class TestSearchResource:
         assert "concepts" in result
 
     @respx.mock
-    def test_basic_search_with_filters(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_basic_search_with_filters(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test basic search with vocabulary and domain filters."""
         route = respx.get(f"{base_url}/search/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         sync_client.search.basic(
@@ -77,15 +77,14 @@ class TestSearchResource:
     @respx.mock
     def test_basic_iter_single_page(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test basic_iter with single page of results."""
+        # Note: meta is at top level, not nested inside data
         search_response = {
             "success": True,
-            "data": {
-                "concepts": [
-                    {"concept_id": 201826, "concept_name": "Type 2 diabetes mellitus"},
-                    {"concept_id": 201820, "concept_name": "Diabetes mellitus"},
-                ],
-                "meta": {"pagination": {"page": 1, "has_next": False}},
-            },
+            "data": [
+                {"concept_id": 201826, "concept_name": "Type 2 diabetes mellitus"},
+                {"concept_id": 201820, "concept_name": "Diabetes mellitus"},
+            ],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
         }
         respx.get(f"{base_url}/search/concepts").mock(
             return_value=Response(200, json=search_response)
@@ -95,21 +94,20 @@ class TestSearchResource:
         assert len(concepts) == 2
 
     @respx.mock
-    def test_basic_iter_multiple_pages(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_basic_iter_multiple_pages(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Test basic_iter auto-pagination across multiple pages."""
+        # Note: meta is at top level, not nested inside data
         page1_response = {
             "success": True,
-            "data": {
-                "concepts": [{"concept_id": 1}],
-                "meta": {"pagination": {"page": 1, "has_next": True}},
-            },
+            "data": [{"concept_id": 1}],
+            "meta": {"pagination": {"page": 1, "has_next": True}},
         }
         page2_response = {
             "success": True,
-            "data": {
-                "concepts": [{"concept_id": 2}],
-                "meta": {"pagination": {"page": 2, "has_next": False}},
-            },
+            "data": [{"concept_id": 2}],
+            "meta": {"pagination": {"page": 2, "has_next": False}},
         }
 
         call_count = 0
@@ -131,7 +129,7 @@ class TestSearchResource:
     @respx.mock
     def test_advanced_search(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test advanced search with POST body."""
-        route = respx.post(f"{base_url}/concepts/search/advanced").mock(
+        route = respx.post(f"{base_url}/search/advanced").mock(
             return_value=Response(
                 200,
                 json={
@@ -143,14 +141,14 @@ class TestSearchResource:
 
         sync_client.search.advanced(
             "myocardial infarction",
-            vocabularies=["SNOMED"],
-            domains=["Condition"],
-            concept_classes=["Clinical Finding"],
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            concept_class_ids=["Clinical Finding"],
             standard_concepts_only=True,
             include_invalid=True,
             relationship_filters=[{"type": "Is a", "concept_id": 123}],
-            limit=50,
-            offset=10,
+            page=2,
+            page_size=50,
         )
 
         # Verify POST body was sent
@@ -174,7 +172,7 @@ class TestSearchResource:
             "diab",
             vocabulary_ids=["SNOMED"],
             domains=["Condition"],
-            max_suggestions=5,
+            page_size=5,
         )
 
         assert len(result) == 2
@@ -182,7 +180,7 @@ class TestSearchResource:
         assert "query=diab" in url_str
         assert "vocabulary_ids=SNOMED" in url_str
         assert "domains=Condition" in url_str
-        assert "max_suggestions=5" in url_str
+        assert "page_size=5" in url_str
 
 
 class TestAsyncSearchResource:
@@ -214,9 +212,7 @@ class TestAsyncSearchResource:
     ) -> None:
         """Test async basic search with all filters."""
         route = respx.get(f"{base_url}/search/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         await async_client.search.basic(
@@ -247,16 +243,14 @@ class TestAsyncSearchResource:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async advanced search."""
-        respx.post(f"{base_url}/concepts/search/advanced").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+        respx.post(f"{base_url}/search/advanced").mock(
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         result = await async_client.search.advanced(
             "heart attack",
-            vocabularies=["SNOMED", "ICD10CM"],
-            domains=["Condition"],
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
             standard_concepts_only=True,
         )
 
@@ -278,3 +272,717 @@ class TestAsyncSearchResource:
 
         result = await async_client.search.autocomplete("asp")
         assert len(result) == 1
+
+
+class TestSemanticSearch:
+    """Tests for semantic search functionality."""
+
+    @respx.mock
+    def test_semantic_search(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test semantic concept search."""
+        semantic_response = {
+            "success": True,
+            "data": {
+                "results": [
+                    {
+                        "concept_id": 4329847,
+                        "concept_name": "Myocardial infarction",
+                        "domain_id": "Condition",
+                        "vocabulary_id": "SNOMED",
+                        "concept_class_id": "Clinical Finding",
+                        "standard_concept": "S",
+                        "concept_code": "22298006",
+                        "similarity_score": 0.95,
+                        "matched_text": "heart attack",
+                    }
+                ],
+            },
+            "meta": {"pagination": {"page": 1, "has_next": False, "total_items": 1}},
+        }
+        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        result = sync_client.search.semantic("heart attack")
+        assert "results" in result
+        assert len(result["results"]) == 1
+        assert result["results"][0]["similarity_score"] == 0.95
+
+        url_str = str(route.calls[0].request.url)
+        assert "query=heart+attack" in url_str
+
+    @respx.mock
+    def test_semantic_search_with_filters(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test semantic search with all filters."""
+        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json={"success": True, "data": {"results": []}})
+        )
+
+        sync_client.search.semantic(
+            "heart attack",
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            concept_class_id="Clinical Finding",
+            threshold=0.5,
+            page=2,
+            page_size=50,
+        )
+
+        url_str = str(route.calls[0].request.url)
+        assert "vocabulary_ids=SNOMED%2CICD10CM" in url_str
+        assert "domain_ids=Condition" in url_str
+        assert "standard_concept=S" in url_str
+        assert "concept_class_id=Clinical+Finding" in url_str
+        assert "threshold=0.5" in url_str
+        assert "page=2" in url_str
+        assert "page_size=50" in url_str
+
+    @respx.mock
+    def test_semantic_iter_single_page(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test semantic_iter with single page."""
+        semantic_response = {
+            "success": True,
+            "data": [
+                {"concept_id": 1, "similarity_score": 0.9},
+                {"concept_id": 2, "similarity_score": 0.8},
+            ],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
+        }
+        respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        results = list(sync_client.search.semantic_iter("diabetes"))
+        assert len(results) == 2
+
+    @respx.mock
+    def test_semantic_iter_multiple_pages(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test semantic_iter auto-pagination."""
+        page1_response = {
+            "success": True,
+            "data": [{"concept_id": 1, "similarity_score": 0.9}],
+            "meta": {"pagination": {"page": 1, "has_next": True}},
+        }
+        page2_response = {
+            "success": True,
+            "data": [{"concept_id": 2, "similarity_score": 0.8}],
+            "meta": {"pagination": {"page": 2, "has_next": False}},
+        }
+
+        call_count = 0
+
+        def mock_response(request):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return Response(200, json=page1_response)
+            return Response(200, json=page2_response)
+
+        respx.get(f"{base_url}/concepts/semantic-search").mock(side_effect=mock_response)
+
+        results = list(sync_client.search.semantic_iter("diabetes", page_size=1))
+        assert len(results) == 2
+        assert results[0]["concept_id"] == 1
+        assert results[1]["concept_id"] == 2
+
+    @respx.mock
+    def test_semantic_iter_empty_response(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test semantic_iter with empty response yields no items."""
+        semantic_response = {
+            "success": True,
+            "data": [],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
+        }
+        respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        results = list(sync_client.search.semantic_iter("nonexistent query"))
+        assert len(results) == 0
+
+
+class TestSimilarSearch:
+    """Tests for similar concept search functionality."""
+
+    @respx.mock
+    def test_similar_by_concept_id(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test finding similar concepts by concept_id."""
+        similar_response = {
+            "success": True,
+            "data": {
+                "similar_concepts": [
+                    {
+                        "concept_id": 1234,
+                        "concept_name": "Similar condition",
+                        "domain_id": "Condition",
+                        "vocabulary_id": "SNOMED",
+                        "concept_class_id": "Clinical Finding",
+                        "standard_concept": "S",
+                        "concept_code": "12345",
+                        "similarity_score": 0.85,
+                    }
+                ],
+                "search_metadata": {
+                    "original_query": "4329847",
+                    "algorithm_used": "hybrid",
+                    "similarity_threshold": 0.7,
+                    "total_candidates": 100,
+                    "results_returned": 1,
+                },
+            },
+        }
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(200, json=similar_response)
+        )
+
+        result = sync_client.search.similar(concept_id=4329847)
+        assert "similar_concepts" in result
+        assert len(result["similar_concepts"]) == 1
+
+        # Verify POST body
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["concept_id"] == 4329847
+        assert body["algorithm"] == "hybrid"
+        assert body["similarity_threshold"] == 0.7
+
+    @respx.mock
+    def test_similar_by_concept_name(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test finding similar concepts by concept_name."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        sync_client.search.similar(concept_name="Type 2 diabetes mellitus")
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["concept_name"] == "Type 2 diabetes mellitus"
+
+    @respx.mock
+    def test_similar_by_query(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test finding similar concepts by natural language query."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        sync_client.search.similar(query="high blood sugar condition")
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["query"] == "high blood sugar condition"
+
+    @respx.mock
+    def test_similar_with_all_options(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Test similar search with all options."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        sync_client.search.similar(
+            concept_id=4329847,
+            algorithm="semantic",
+            similarity_threshold=0.8,
+            page_size=50,
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            include_invalid=True,
+            include_scores=True,
+            include_explanations=True,
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["algorithm"] == "semantic"
+        assert body["similarity_threshold"] == 0.8
+        assert body["page_size"] == 50
+        assert body["vocabulary_ids"] == ["SNOMED", "ICD10CM"]
+        assert body["domain_ids"] == ["Condition"]
+        assert body["standard_concept"] == "S"
+        assert body["include_invalid"] is True
+        assert body["include_scores"] is True
+        assert body["include_explanations"] is True
+
+
+class TestAsyncSemanticSearch:
+    """Tests for async semantic search functionality."""
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_search(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic search."""
+        semantic_response = {
+            "success": True,
+            "data": {
+                "results": [{"concept_id": 4329847, "similarity_score": 0.95}],
+            },
+        }
+        respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        result = await async_client.search.semantic("heart attack")
+        assert "results" in result
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_with_filters(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic search with filters."""
+        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json={"success": True, "data": {"results": []}})
+        )
+
+        await async_client.search.semantic(
+            "diabetes",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            threshold=0.6,
+        )
+
+        url_str = str(route.calls[0].request.url)
+        assert "vocabulary_ids=SNOMED" in url_str
+        assert "standard_concept=S" in url_str
+        assert "threshold=0.6" in url_str
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_with_all_filters(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic search with all available filters."""
+        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json={"success": True, "data": {"results": []}})
+        )
+
+        await async_client.search.semantic(
+            "heart attack",
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition", "Observation"],
+            standard_concept="C",
+            concept_class_id="Clinical Finding",
+            threshold=0.7,
+            page=3,
+            page_size=50,
+        )
+
+        url_str = str(route.calls[0].request.url)
+        assert "vocabulary_ids=SNOMED%2CICD10CM" in url_str
+        assert "domain_ids=Condition%2CObservation" in url_str
+        assert "standard_concept=C" in url_str
+        assert "concept_class_id=Clinical+Finding" in url_str
+        assert "threshold=0.7" in url_str
+        assert "page=3" in url_str
+        assert "page_size=50" in url_str
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_iter_single_page(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic_iter with single page."""
+        semantic_response = {
+            "success": True,
+            "data": [
+                {"concept_id": 1, "similarity_score": 0.9},
+                {"concept_id": 2, "similarity_score": 0.8},
+            ],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
+        }
+        respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        results = []
+        async for item in async_client.search.semantic_iter("diabetes"):
+            results.append(item)
+
+        assert len(results) == 2
+        assert results[0]["concept_id"] == 1
+        assert results[1]["concept_id"] == 2
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_iter_multiple_pages(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic_iter auto-pagination across multiple pages."""
+        page1_response = {
+            "success": True,
+            "data": [{"concept_id": 1, "similarity_score": 0.9}],
+            "meta": {"pagination": {"page": 1, "has_next": True}},
+        }
+        page2_response = {
+            "success": True,
+            "data": [{"concept_id": 2, "similarity_score": 0.8}],
+            "meta": {"pagination": {"page": 2, "has_next": True}},
+        }
+        page3_response = {
+            "success": True,
+            "data": [{"concept_id": 3, "similarity_score": 0.7}],
+            "meta": {"pagination": {"page": 3, "has_next": False}},
+        }
+
+        call_count = 0
+
+        def mock_response(request):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return Response(200, json=page1_response)
+            elif call_count == 2:
+                return Response(200, json=page2_response)
+            return Response(200, json=page3_response)
+
+        respx.get(f"{base_url}/concepts/semantic-search").mock(side_effect=mock_response)
+
+        results = []
+        async for item in async_client.search.semantic_iter("diabetes", page_size=1):
+            results.append(item)
+
+        assert len(results) == 3
+        assert results[0]["concept_id"] == 1
+        assert results[1]["concept_id"] == 2
+        assert results[2]["concept_id"] == 3
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_iter_with_filters(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic_iter with filters are forwarded correctly."""
+        semantic_response = {
+            "success": True,
+            "data": [{"concept_id": 1, "similarity_score": 0.9}],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
+        }
+        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        results = []
+        async for item in async_client.search.semantic_iter(
+            "diabetes",
+            vocabulary_ids=["SNOMED"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            concept_class_id="Clinical Finding",
+            threshold=0.5,
+            page_size=10,
+        ):
+            results.append(item)
+
+        assert len(results) == 1
+        url_str = str(route.calls[0].request.url)
+        assert "vocabulary_ids=SNOMED" in url_str
+        assert "domain_ids=Condition" in url_str
+        assert "standard_concept=S" in url_str
+        assert "concept_class_id=Clinical+Finding" in url_str
+        assert "threshold=0.5" in url_str
+        assert "page_size=10" in url_str
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_semantic_iter_empty_response(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async semantic_iter with empty response yields no items."""
+        semantic_response = {
+            "success": True,
+            "data": [],
+            "meta": {"pagination": {"page": 1, "has_next": False}},
+        }
+        respx.get(f"{base_url}/concepts/semantic-search").mock(
+            return_value=Response(200, json=semantic_response)
+        )
+
+        results = []
+        async for item in async_client.search.semantic_iter("nonexistent query"):
+            results.append(item)
+
+        assert len(results) == 0
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_similar(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async similar search."""
+        similar_response = {
+            "success": True,
+            "data": {
+                "similar_concepts": [{"concept_id": 1234, "similarity_score": 0.85}],
+                "search_metadata": {"algorithm_used": "hybrid"},
+            },
+        }
+        respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(200, json=similar_response)
+        )
+
+        result = await async_client.search.similar(concept_id=4329847)
+        assert "similar_concepts" in result
+        assert len(result["similar_concepts"]) == 1
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_similar_by_concept_name(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async similar search by concept_name."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        await async_client.search.similar(concept_name="Type 2 diabetes mellitus")
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["concept_name"] == "Type 2 diabetes mellitus"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_similar_by_query(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async similar search by natural language query."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        await async_client.search.similar(query="high blood sugar condition")
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["query"] == "high blood sugar condition"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_similar_with_all_options(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Test async similar search with all options."""
+        route = respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        await async_client.search.similar(
+            concept_id=4329847,
+            algorithm="semantic",
+            similarity_threshold=0.8,
+            page_size=50,
+            vocabulary_ids=["SNOMED", "ICD10CM"],
+            domain_ids=["Condition"],
+            standard_concept="S",
+            include_invalid=True,
+            include_scores=True,
+            include_explanations=True,
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["algorithm"] == "semantic"
+        assert body["similarity_threshold"] == 0.8
+        assert body["page_size"] == 50
+        assert body["vocabulary_ids"] == ["SNOMED", "ICD10CM"]
+        assert body["domain_ids"] == ["Condition"]
+        assert body["standard_concept"] == "S"
+        assert body["include_invalid"] is True
+        assert body["include_scores"] is True
+        assert body["include_explanations"] is True
+
+
+class TestBulkBasicSearch:
+    """Tests for bulk lexical search."""
+
+    @respx.mock
+    def test_bulk_basic(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk basic search with multiple queries."""
+        mock_response = {
+            "success": True,
+            "data": {
+                "results": [
+                    {
+                        "search_id": "q1",
+                        "query": "diabetes",
+                        "results": [{"concept_id": 201826, "concept_name": "Type 2 diabetes"}],
+                        "status": "completed",
+                        "duration": 15,
+                    },
+                    {
+                        "search_id": "q2",
+                        "query": "hypertension",
+                        "results": [{"concept_id": 316866, "concept_name": "Hypertensive disorder"}],
+                        "status": "completed",
+                        "duration": 12,
+                    },
+                ],
+                "total_searches": 2,
+                "completed_searches": 2,
+                "failed_searches": 0,
+            },
+        }
+        respx.post(f"{base_url}/search/bulk").mock(
+            return_value=Response(200, json=mock_response)
+        )
+
+        result = sync_client.search.bulk_basic([
+            {"search_id": "q1", "query": "diabetes"},
+            {"search_id": "q2", "query": "hypertension"},
+        ])
+
+        assert len(result["results"]) == 2
+        assert result["total_searches"] == 2
+        assert result["completed_searches"] == 2
+        assert result["results"][0]["search_id"] == "q1"
+
+    @respx.mock
+    def test_bulk_basic_with_defaults(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk basic search with shared defaults."""
+        import json
+
+        respx.post(f"{base_url}/search/bulk").mock(
+            return_value=Response(200, json={
+                "success": True,
+                "data": {
+                    "results": [],
+                    "total_searches": 1,
+                    "completed_searches": 1,
+                    "failed_searches": 0,
+                },
+            })
+        )
+
+        sync_client.search.bulk_basic(
+            [{"search_id": "q1", "query": "diabetes"}],
+            defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5},
+        )
+
+        request_body = json.loads(respx.calls[0].request.content)
+        assert request_body["defaults"]["vocabulary_ids"] == ["SNOMED"]
+        assert request_body["defaults"]["page_size"] == 5
+
+
+class TestBulkSemanticSearch:
+    """Tests for bulk semantic search."""
+
+    @respx.mock
+    def test_bulk_semantic(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk semantic search with multiple queries."""
+        mock_response = {
+            "success": True,
+            "data": {
+                "results": [
+                    {
+                        "search_id": "s1",
+                        "query": "heart failure treatment",
+                        "results": [{"concept_id": 316139, "similarity_score": 0.92}],
+                        "status": "completed",
+                        "result_count": 1,
+                        "duration": 45,
+                    },
+                ],
+                "total_searches": 1,
+                "completed_count": 1,
+                "failed_count": 0,
+                "total_duration": 45,
+            },
+        }
+        respx.post(f"{base_url}/search/semantic-bulk").mock(
+            return_value=Response(200, json=mock_response)
+        )
+
+        result = sync_client.search.bulk_semantic([
+            {"search_id": "s1", "query": "heart failure treatment"},
+        ])
+
+        assert len(result["results"]) == 1
+        assert result["completed_count"] == 1
+        assert result["results"][0]["status"] == "completed"
+
+    @respx.mock
+    def test_bulk_semantic_with_defaults(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test bulk semantic search with shared defaults."""
+        import json
+
+        respx.post(f"{base_url}/search/semantic-bulk").mock(
+            return_value=Response(200, json={
+                "success": True,
+                "data": {
+                    "results": [],
+                    "total_searches": 1,
+                    "completed_count": 1,
+                    "failed_count": 0,
+                },
+            })
+        )
+
+        sync_client.search.bulk_semantic(
+            [{"search_id": "s1", "query": "diabetes medications"}],
+            defaults={"threshold": 0.8, "page_size": 10, "vocabulary_ids": ["SNOMED"]},
+        )
+
+        request_body = json.loads(respx.calls[0].request.content)
+        assert request_body["defaults"]["threshold"] == 0.8
+        assert request_body["defaults"]["page_size"] == 10
+        assert request_body["defaults"]["vocabulary_ids"] == ["SNOMED"]

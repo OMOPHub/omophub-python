@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
@@ -11,6 +12,12 @@ import httpx
 from ._config import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT
 from ._exceptions import ConnectionError, TimeoutError
 from ._version import get_version
+
+# Retry constants (OpenAI-style exponential backoff with jitter)
+INITIAL_RETRY_DELAY = 0.5  # seconds
+MAX_RETRY_DELAY = 8.0  # seconds
+MAX_RETRY_AFTER = 60  # max seconds to respect from Retry-After header
+RETRYABLE_STATUS_CODES = (429, 502, 503, 504)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -22,6 +29,37 @@ try:
     HTTP2_AVAILABLE = True
 except ImportError:
     HTTP2_AVAILABLE = False
+
+
+def _calculate_retry_delay(
+    attempt: int,
+    max_retries: int,
+    response_headers: Mapping[str, str] | None = None,
+) -> float:
+    """Calculate retry delay with Retry-After support and exponential backoff + jitter.
+
+    Follows the OpenAI pattern:
+    1. If Retry-After header present and <= 60s, use it
+    2. Otherwise, exponential backoff (0.5s * 2^attempt) with 25% jitter, capped at 8s
+    """
+    # Check Retry-After header first
+    if response_headers:
+        retry_after = response_headers.get("retry-after") or response_headers.get(
+            "Retry-After"
+        )
+        if retry_after:
+            try:
+                retry_after_seconds = float(retry_after)
+                if 0 < retry_after_seconds <= MAX_RETRY_AFTER:
+                    return retry_after_seconds
+            except ValueError:
+                pass
+
+    # Exponential backoff with jitter
+    retries_done = min(max_retries - (max_retries - attempt), 1000)
+    sleep_seconds = min(INITIAL_RETRY_DELAY * (2.0**retries_done), MAX_RETRY_DELAY)
+    jitter = 1 - 0.25 * random.random()
+    return sleep_seconds * jitter
 
 
 class HTTPClient(ABC):
@@ -103,7 +141,7 @@ class SyncHTTPClient(HTTPClient):
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": f"omophub-python/{get_version()}",
+            "User-Agent": f"OMOPHub-SDK-Python/{get_version()}",
         }
 
     def request(
@@ -137,6 +175,16 @@ class SyncHTTPClient(HTTPClient):
                     params=filtered_params if filtered_params else None,
                     json=json,
                 )
+                # Retry on rate limits (429) and server errors (502, 503, 504)
+                if (
+                    response.status_code in RETRYABLE_STATUS_CODES
+                    and attempt < self._max_retries
+                ):
+                    delay = _calculate_retry_delay(
+                        attempt, self._max_retries, response.headers
+                    )
+                    time.sleep(delay)
+                    continue
                 return response.content, response.status_code, response.headers
 
             except httpx.ConnectError as e:
@@ -148,7 +196,8 @@ class SyncHTTPClient(HTTPClient):
 
             # Exponential backoff before retry
             if attempt < self._max_retries:
-                time.sleep(2**attempt * 0.1)
+                delay = _calculate_retry_delay(attempt, self._max_retries)
+                time.sleep(delay)
 
         raise last_exception or ConnectionError("Request failed after retries")
 
@@ -186,7 +235,7 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": f"omophub-python/{get_version()}",
+            "User-Agent": f"OMOPHub-SDK-Python/{get_version()}",
         }
 
     async def request(
@@ -222,6 +271,16 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
                     params=filtered_params if filtered_params else None,
                     json=json,
                 )
+                # Retry on rate limits (429) and server errors (502, 503, 504)
+                if (
+                    response.status_code in RETRYABLE_STATUS_CODES
+                    and attempt < self._max_retries
+                ):
+                    delay = _calculate_retry_delay(
+                        attempt, self._max_retries, response.headers
+                    )
+                    await asyncio.sleep(delay)
+                    continue
                 return response.content, response.status_code, response.headers
 
             except httpx.ConnectError as e:
@@ -233,7 +292,8 @@ class AsyncHTTPClientImpl(AsyncHTTPClient):
 
             # Exponential backoff before retry
             if attempt < self._max_retries:
-                await asyncio.sleep(2**attempt * 0.1)
+                delay = _calculate_retry_delay(attempt, self._max_retries)
+                await asyncio.sleep(delay)
 
         raise last_exception or ConnectionError("Request failed after retries")
 

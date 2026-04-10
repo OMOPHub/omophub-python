@@ -109,7 +109,7 @@ class TestAsyncIntegration:
         """Async autocomplete."""
         result = await async_integration_client.search.autocomplete(
             "aspi",
-            max_suggestions=5,
+            page_size=5,
         )
 
         suggestions = extract_data(result, "suggestions")

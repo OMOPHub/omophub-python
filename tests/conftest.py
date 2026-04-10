@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import pytest
@@ -85,7 +86,7 @@ def mock_api_response(mock_concept: dict[str, Any]) -> dict[str, Any]:
         "meta": {
             "request_id": "req_test123",
             "timestamp": "2024-12-01T00:00:00Z",
-            "vocab_release": "2024.4",
+            "vocab_release": "2024.2",
         },
     }
 
@@ -135,6 +136,20 @@ def mock_error_response() -> dict[str, Any]:
     }
 
 
+@pytest.fixture(autouse=True)
+def rate_limit_delay(request: pytest.FixtureRequest) -> None:
+    """Add delay between integration tests to avoid rate limiting."""
+    yield
+    # Only delay for integration tests
+    if "integration" in request.keywords:
+        # Bulk endpoints consume more rate limit budget
+        test_name = request.node.name
+        if "bulk" in test_name:
+            time.sleep(5)
+        else:
+            time.sleep(2)
+
+
 # Well-known test concept IDs for integration tests
 DIABETES_CONCEPT_ID = 201826  # Type 2 diabetes mellitus (SNOMED)
 ASPIRIN_CONCEPT_ID = 1112807  # Aspirin (RxNorm)
@@ -162,6 +177,11 @@ def extract_data(result: dict[str, Any] | list[Any], key: str) -> list[Any]:
         value = result.get(key)
         if isinstance(value, list):
             return value
+        # Handle nested dicts: {"results": {"results": [...]}}
+        if isinstance(value, dict) and key in value:
+            nested = value.get(key)
+            if isinstance(nested, list):
+                return nested
         # Fallback: check 'results' key for batch endpoint backward compatibility
         # (production API returns 'results', new API will return 'concepts')
         if key == "concepts":

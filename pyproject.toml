@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "omophub"
 dynamic = ["version"]
-description = "Python SDK for OMOPHub - Medical Vocabulary API"
+description = "Python SDK for OMOPHub - Medical Vocabulary API with semantic search"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -27,6 +27,9 @@ keywords = [
     "terminology",
     "api",
     "sdk",
+    "semantic-search",
+    "embeddings",
+    "nlp",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -19,46 +19,19 @@ class Domains:
     def list(
         self,
         *,
-        vocabulary_ids: builtins.list[str] | None = None,
-        include_concept_counts: bool = True,
-        include_statistics: bool = False,
-        include_examples: bool = False,
-        standard_only: bool = False,
-        active_only: bool = True,
-        sort_by: str = "domain_id",
-        sort_order: str = "asc",
+        include_stats: bool = False,
     ) -> dict[str, Any]:
         """List all domains.
 
         Args:
-            vocabulary_ids: Filter by vocabularies
-            include_concept_counts: Include concept counts
-            include_statistics: Include detailed statistics
-            include_examples: Include example concepts
-            standard_only: Only standard concepts
-            active_only: Only active domains
-            sort_by: Sort field
-            sort_order: Sort order
+            include_stats: Include concept counts and vocabulary coverage
 
         Returns:
-            Domain list with summary
+            Domain list
         """
-        params: dict[str, Any] = {
-            "sort_by": sort_by,
-            "sort_order": sort_order,
-        }
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if include_concept_counts:
-            params["include_concept_counts"] = "true"
-        if include_statistics:
-            params["include_statistics"] = "true"
-        if include_examples:
-            params["include_examples"] = "true"
-        if standard_only:
-            params["standard_only"] = "true"
-        if not active_only:
-            params["active_only"] = "false"
+        params: dict[str, Any] = {}
+        if include_stats:
+            params["include_stats"] = "true"
 
         return self._request.get("/domains", params=params)
 
@@ -67,8 +40,8 @@ class Domains:
         domain_id: str,
         *,
         vocabulary_ids: builtins.list[str] | None = None,
-        concept_class_ids: builtins.list[str] | None = None,
         standard_only: bool = False,
+        include_invalid: bool = False,
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
@@ -77,8 +50,8 @@ class Domains:
         Args:
             domain_id: The domain ID
             vocabulary_ids: Filter by vocabularies
-            concept_class_ids: Filter by concept classes
             standard_only: Only standard concepts
+            include_invalid: Include invalid/deprecated concepts
             page: Page number
             page_size: Results per page
 
@@ -88,10 +61,10 @@ class Domains:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if concept_class_ids:
-            params["concept_class_ids"] = ",".join(concept_class_ids)
         if standard_only:
             params["standard_only"] = "true"
+        if include_invalid:
+            params["include_invalid"] = "true"
 
         return self._request.get(f"/domains/{domain_id}/concepts", params=params)
 
@@ -105,46 +78,19 @@ class AsyncDomains:
     async def list(
         self,
         *,
-        vocabulary_ids: builtins.list[str] | None = None,
-        include_concept_counts: bool = True,
-        include_statistics: bool = False,
-        include_examples: bool = False,
-        standard_only: bool = False,
-        active_only: bool = True,
-        sort_by: str = "domain_id",
-        sort_order: str = "asc",
+        include_stats: bool = False,
     ) -> dict[str, Any]:
         """List all domains.
 
         Args:
-            vocabulary_ids: Filter by vocabularies
-            include_concept_counts: Include concept counts
-            include_statistics: Include detailed statistics
-            include_examples: Include example concepts
-            standard_only: Only standard concepts
-            active_only: Only active domains
-            sort_by: Sort field
-            sort_order: Sort order
+            include_stats: Include concept counts and vocabulary coverage
 
         Returns:
-            Domain list with summary
+            Domain list
         """
-        params: dict[str, Any] = {
-            "sort_by": sort_by,
-            "sort_order": sort_order,
-        }
-        if vocabulary_ids:
-            params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if include_concept_counts:
-            params["include_concept_counts"] = "true"
-        if include_statistics:
-            params["include_statistics"] = "true"
-        if include_examples:
-            params["include_examples"] = "true"
-        if standard_only:
-            params["standard_only"] = "true"
-        if not active_only:
-            params["active_only"] = "false"
+        params: dict[str, Any] = {}
+        if include_stats:
+            params["include_stats"] = "true"
 
         return await self._request.get("/domains", params=params)
 
@@ -153,8 +99,8 @@ class AsyncDomains:
         domain_id: str,
         *,
         vocabulary_ids: builtins.list[str] | None = None,
-        concept_class_ids: builtins.list[str] | None = None,
         standard_only: bool = False,
+        include_invalid: bool = False,
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
@@ -163,8 +109,8 @@ class AsyncDomains:
         Args:
             domain_id: The domain ID
             vocabulary_ids: Filter by vocabularies
-            concept_class_ids: Filter by concept classes
             standard_only: Only standard concepts
+            include_invalid: Include invalid/deprecated concepts
             page: Page number
             page_size: Results per page
 
@@ -174,9 +120,9 @@ class AsyncDomains:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if concept_class_ids:
-            params["concept_class_ids"] = ",".join(concept_class_ids)
         if standard_only:
             params["standard_only"] = "true"
+        if include_invalid:
+            params["include_invalid"] = "true"
 
         return await self._request.get(f"/domains/{domain_id}/concepts", params=params)

@@ -16,8 +16,7 @@ def get_mappings() -> None:
 
         result = client.mappings.get(
             concept_id,
-            target_vocabularies=["ICD10CM", "Read", "ICD9CM"],
-            include_mapping_quality=True,
+            target_vocabulary="ICD10CM",
         )
 
         source = result.get("source_concept", {})
@@ -32,12 +31,8 @@ def get_mappings() -> None:
             target_vocab = m.get("target_vocabulary_id", "?")
             target_code = m.get("target_concept_code", "?")
             target_name = m.get("target_concept_name", "?")
-            # Access confidence via quality when available
-            quality = m.get("quality", {})
-            confidence = quality.get("confidence_score", "N/A") if quality else "N/A"
             print(f"\n  [{target_vocab}] {target_code}")
             print(f"    Name: {target_name}")
-            print(f"    Confidence: {confidence}")
     except omophub.OMOPHubError as e:
         print(f"API error: {e.message}")
     finally:
@@ -89,14 +84,11 @@ def lookup_by_code() -> None:
         print(f"  Vocabulary: {concept.get('vocabulary_id', 'Unknown')}")
         print(f"  Standard: {concept.get('standard_concept', 'N/A')}")
 
-        # If it's not a standard concept, find mappings to standard concepts
+        # If it's not a standard concept, find mappings
         if concept.get("standard_concept") != "S":
-            mappings = client.mappings.get(
-                concept.get("concept_id", 0),
-                standard_only=True,
-            )
+            mappings = client.mappings.get(concept.get("concept_id", 0))
 
-            print("\n  Standard mappings:")
+            print("\n  Mappings to other vocabularies:")
             for m in mappings.get("mappings", [])[:5]:
                 print(f"    → {m.get('target_concept_name', 'Unknown')}")
     except omophub.OMOPHubError as e:

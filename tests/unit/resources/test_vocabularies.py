@@ -91,25 +91,16 @@ class TestVocabulariesResource:
         assert result["vocabulary_id"] == "SNOMED"
 
     @respx.mock
-    def test_get_vocabulary_with_options(
-        self, sync_client: OMOPHub, base_url: str
-    ) -> None:
-        """Test getting vocabulary with include options."""
-        route = respx.get(f"{base_url}/vocabularies/SNOMED").mock(
+    def test_get_vocabulary_basic(self, sync_client: OMOPHub, base_url: str) -> None:
+        """Test getting vocabulary (no additional options - use stats() for statistics)."""
+        respx.get(f"{base_url}/vocabularies/SNOMED").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"vocabulary_id": "SNOMED"}}
             )
         )
 
-        sync_client.vocabularies.get(
-            "SNOMED",
-            include_stats=True,
-            include_domains=True,
-        )
-
-        url_str = str(route.calls[0].request.url)
-        assert "include_stats=true" in url_str
-        assert "include_domains=true" in url_str
+        result = sync_client.vocabularies.get("SNOMED")
+        assert result["vocabulary_id"] == "SNOMED"
 
     @respx.mock
     def test_get_vocabulary_stats(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -132,29 +123,22 @@ class TestVocabulariesResource:
 
     @respx.mock
     def test_get_vocabulary_domains(self, sync_client: OMOPHub, base_url: str) -> None:
-        """Test getting vocabulary domains."""
+        """Test getting all standard OHDSI domains."""
         domains_response = {
             "success": True,
             "data": {
                 "domains": [
-                    {"domain_id": "Condition", "concept_count": 150000},
-                    {"domain_id": "Drug", "concept_count": 100000},
+                    {"domain_id": "Condition", "domain_name": "Condition"},
+                    {"domain_id": "Drug", "domain_name": "Drug"},
                 ],
             },
         }
-        route = respx.get(f"{base_url}/vocabularies/domains").mock(
+        respx.get(f"{base_url}/vocabularies/domains").mock(
             return_value=Response(200, json=domains_response)
         )
 
-        result = sync_client.vocabularies.domains(
-            vocabulary_ids=["SNOMED"], page=1, page_size=25
-        )
-
+        result = sync_client.vocabularies.domains()
         assert "domains" in result
-        url_str = str(route.calls[0].request.url)
-        assert "vocabulary_ids=SNOMED" in url_str
-        assert "page=1" in url_str
-        assert "page_size=25" in url_str
 
     @respx.mock
     def test_get_vocabulary_concepts(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -174,17 +158,25 @@ class TestVocabulariesResource:
 
         sync_client.vocabularies.concepts(
             "SNOMED",
-            domain_id="Condition",
-            concept_class_id="Clinical Finding",
-            standard_only=True,
+            search="diabetes",
+            standard_concept="S",
+            include_invalid=True,
+            include_relationships=True,
+            include_synonyms=True,
+            sort_by="concept_id",
+            sort_order="desc",
             page=1,
             page_size=100,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "domain_id=Condition" in url_str
-        assert "concept_class_id=Clinical+Finding" in url_str
-        assert "standard_only=true" in url_str
+        assert "search=diabetes" in url_str
+        assert "standard_concept=S" in url_str
+        assert "include_invalid=true" in url_str
+        assert "include_relationships=true" in url_str
+        assert "include_synonyms=true" in url_str
+        assert "sort_by=concept_id" in url_str
+        assert "sort_order=desc" in url_str
 
 
 class TestAsyncVocabulariesResource:
@@ -247,25 +239,18 @@ class TestAsyncVocabulariesResource:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_async_get_vocabulary_with_options(
+    async def test_async_get_vocabulary_basic(
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
-        """Test async get vocabulary with options."""
-        route = respx.get(f"{base_url}/vocabularies/SNOMED").mock(
+        """Test async get vocabulary (no additional options - use stats() for statistics)."""
+        respx.get(f"{base_url}/vocabularies/SNOMED").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"vocabulary_id": "SNOMED"}}
             )
         )
 
-        await async_client.vocabularies.get(
-            "SNOMED",
-            include_stats=True,
-            include_domains=True,
-        )
-
-        url_str = str(route.calls[0].request.url)
-        assert "include_stats=true" in url_str
-        assert "include_domains=true" in url_str
+        result = await async_client.vocabularies.get("SNOMED")
+        assert result["vocabulary_id"] == "SNOMED"
 
     @pytest.mark.asyncio
     @respx.mock
@@ -291,21 +276,13 @@ class TestAsyncVocabulariesResource:
     async def test_async_get_vocabulary_domains(
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
-        """Test async getting vocabulary domains."""
-        route = respx.get(f"{base_url}/vocabularies/domains").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"domains": []}}
-            )
+        """Test async getting all standard OHDSI domains."""
+        respx.get(f"{base_url}/vocabularies/domains").mock(
+            return_value=Response(200, json={"success": True, "data": {"domains": []}})
         )
 
-        await async_client.vocabularies.domains(
-            vocabulary_ids=["SNOMED"], page=2, page_size=30
-        )
-
-        url_str = str(route.calls[0].request.url)
-        assert "vocabulary_ids=SNOMED" in url_str
-        assert "page=2" in url_str
-        assert "page_size=30" in url_str
+        result = await async_client.vocabularies.domains()
+        assert "domains" in result
 
     @pytest.mark.asyncio
     @respx.mock
@@ -314,21 +291,25 @@ class TestAsyncVocabulariesResource:
     ) -> None:
         """Test async getting vocabulary concepts."""
         route = respx.get(f"{base_url}/vocabularies/SNOMED/concepts").mock(
-            return_value=Response(
-                200, json={"success": True, "data": {"concepts": []}}
-            )
+            return_value=Response(200, json={"success": True, "data": {"concepts": []}})
         )
 
         await async_client.vocabularies.concepts(
             "SNOMED",
-            domain_id="Drug",
-            concept_class_id="Ingredient",
-            standard_only=True,
+            search="aspirin",
+            standard_concept="S",
+            include_invalid=True,
+            include_relationships=True,
+            include_synonyms=True,
+            sort_by="name",
+            sort_order="asc",
             page=1,
             page_size=50,
         )
 
         url_str = str(route.calls[0].request.url)
-        assert "domain_id=Drug" in url_str
-        assert "concept_class_id=Ingredient" in url_str
-        assert "standard_only=true" in url_str
+        assert "search=aspirin" in url_str
+        assert "standard_concept=S" in url_str
+        assert "include_invalid=true" in url_str
+        assert "include_relationships=true" in url_str
+        assert "include_synonyms=true" in url_str

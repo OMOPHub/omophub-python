@@ -34,10 +34,24 @@ from .relationship import (
     RelationshipType,
 )
 from .search import (
+    BulkSearchDefaults,
+    BulkSearchInput,
+    BulkSearchResponse,
+    BulkSearchResultItem,
+    BulkSemanticSearchDefaults,
+    BulkSemanticSearchInput,
+    BulkSemanticSearchResponse,
+    BulkSemanticSearchResultItem,
+    QueryEnhancement,
     SearchFacet,
     SearchFacets,
     SearchMetadata,
     SearchResult,
+    SemanticSearchMeta,
+    SemanticSearchResult,
+    SimilarConcept,
+    SimilarSearchMetadata,
+    SimilarSearchResult,
     Suggestion,
 )
 from .vocabulary import (
@@ -48,16 +62,20 @@ from .vocabulary import (
 )
 
 __all__ = [
-    # Common
     "APIResponse",
-    # Hierarchy
     "Ancestor",
     "BatchConceptResult",
-    # Concept
+    "BulkSearchDefaults",
+    "BulkSearchInput",
+    "BulkSearchResponse",
+    "BulkSearchResultItem",
+    "BulkSemanticSearchDefaults",
+    "BulkSemanticSearchInput",
+    "BulkSemanticSearchResponse",
+    "BulkSemanticSearchResultItem",
     "Concept",
     "ConceptSummary",
     "Descendant",
-    # Domain
     "Domain",
     "DomainCategory",
     "DomainStats",
@@ -66,27 +84,29 @@ __all__ = [
     "ErrorResponse",
     "HierarchyPath",
     "HierarchySummary",
-    # Mapping
     "Mapping",
     "MappingContext",
     "MappingQuality",
     "MappingSummary",
     "PaginationMeta",
     "PaginationParams",
+    "QueryEnhancement",
     "RelatedConcept",
-    # Relationship
     "Relationship",
     "RelationshipSummary",
     "RelationshipType",
     "ResponseMeta",
-    # Search
     "SearchFacet",
     "SearchFacets",
     "SearchMetadata",
     "SearchResult",
+    "SemanticSearchMeta",
+    "SemanticSearchResult",
+    "SimilarConcept",
+    "SimilarSearchMetadata",
+    "SimilarSearchResult",
     "Suggestion",
     "Synonym",
-    # Vocabulary
     "Vocabulary",
     "VocabularyDomain",
     "VocabularyStats",

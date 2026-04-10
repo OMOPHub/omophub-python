@@ -29,7 +29,7 @@ class TestRelationshipsIntegration:
         """Get relationships filtered by type."""
         result = integration_client.relationships.get(
             DIABETES_CONCEPT_ID,
-            relationship_type="Is a",
+            relationship_ids=["Is a"],
             page_size=50,
         )
 
@@ -42,7 +42,7 @@ class TestRelationshipsIntegration:
         """Get relationships filtered by target vocabulary."""
         result = integration_client.relationships.get(
             DIABETES_CONCEPT_ID,
-            target_vocabulary="SNOMED",
+            vocabulary_ids=["SNOMED"],
             page_size=100,
         )
 
@@ -60,25 +60,17 @@ class TestRelationshipsIntegration:
     def test_get_relationship_types_with_filters(
         self, integration_client: OMOPHub
     ) -> None:
-        """Get relationship types with filters."""
+        """Get relationship types with pagination."""
         result = integration_client.relationships.types(
-            vocabulary_ids=["SNOMED"],
-            include_reverse=True,
-            include_usage_stats=True,
             page_size=50,
         )
 
         types = result.get("relationship_types", result)
         assert isinstance(types, list)
 
-    def test_get_relationship_types_by_category(
-        self, integration_client: OMOPHub
-    ) -> None:
-        """Get relationship types by category."""
-        result = integration_client.relationships.types(
-            category="hierarchy",
-            standard_only=True,
-        )
+    def test_get_relationship_types_basic(self, integration_client: OMOPHub) -> None:
+        """Get relationship types with default settings."""
+        result = integration_client.relationships.types()
 
         types = result.get("relationship_types", result)
         assert isinstance(types, list)

@@ -27,30 +27,17 @@ class TestDomainsIntegration:
         assert "Drug" in domain_ids
         assert "Procedure" in domain_ids
 
-    def test_list_domains_with_options(self, integration_client: OMOPHub) -> None:
-        """List domains with statistics and examples."""
-        result = integration_client.domains.list(
-            include_concept_counts=True,
-            include_statistics=True,
-        )
+    def test_list_domains_with_stats(self, integration_client: OMOPHub) -> None:
+        """List domains with statistics."""
+        result = integration_client.domains.list(include_stats=True)
 
         domains = result.get("domains", [])
         assert len(domains) > 0
-        # Verify domains are returned with expected structure
-        assert all("domain_id" in d for d in domains)
-
-    def test_list_domains_with_vocabulary_filter(
-        self, integration_client: OMOPHub
-    ) -> None:
-        """List domains filtered by vocabulary."""
-        result = integration_client.domains.list(
-            vocabulary_ids=["SNOMED"],
-            include_concept_counts=True,
-        )
-
-        domains = result.get("domains", [])
-        assert isinstance(domains, list)
-        assert len(domains) > 0
+        # Verify domains are returned with expected structure including stats
+        for domain in domains:
+            assert "domain_id" in domain
+            assert "concept_count" in domain
+            assert "standard_concept_count" in domain
 
     def test_get_domain_concepts(self, integration_client: OMOPHub) -> None:
         """Get concepts in Condition domain."""

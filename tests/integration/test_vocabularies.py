@@ -48,13 +48,9 @@ class TestVocabulariesIntegration:
         assert vocab["vocabulary_id"] == "SNOMED"
         assert "vocabulary_name" in vocab
 
-    def test_get_vocabulary_with_options(self, integration_client: OMOPHub) -> None:
-        """Get vocabulary with stats and domains."""
-        vocab = integration_client.vocabularies.get(
-            "SNOMED",
-            include_stats=True,
-            include_domains=True,
-        )
+    def test_get_vocabulary_basic(self, integration_client: OMOPHub) -> None:
+        """Get vocabulary (use stats() method for statistics)."""
+        vocab = integration_client.vocabularies.get("SNOMED")
 
         assert vocab["vocabulary_id"] == "SNOMED"
         assert "vocabulary_name" in vocab
@@ -72,18 +68,22 @@ class TestVocabulariesIntegration:
         )
 
     def test_get_vocabulary_domains(self, integration_client: OMOPHub) -> None:
-        """Get vocabulary domains."""
-        result = integration_client.vocabularies.domains(vocabulary_ids=["SNOMED"])
+        """Get all OHDSI domains."""
+        result = integration_client.vocabularies.domains()
 
         domains = extract_data(result, "domains")
         assert isinstance(domains, list)
+        assert len(domains) > 0
+        # Verify domain structure
+        assert all("domain_id" in d for d in domains)
+        assert all("domain_name" in d for d in domains)
 
     def test_get_vocabulary_concepts(self, integration_client: OMOPHub) -> None:
         """Get concepts in SNOMED vocabulary."""
         result = integration_client.vocabularies.concepts(
             "SNOMED",
-            domain_id="Condition",
-            standard_only=True,
+            search="diabetes",
+            standard_concept="S",
             page_size=10,
         )
 
