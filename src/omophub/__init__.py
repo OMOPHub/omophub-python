@@ -30,6 +30,11 @@ from ._exceptions import (
     ValidationError,
 )
 from ._version import __version__
+from .fhir_interop import (
+    get_async_fhirpy_client,
+    get_fhir_server_url,
+    get_fhirpy_client,
+)
 
 # Re-export commonly used types
 from .types import (
@@ -93,6 +98,10 @@ __all__ = [
     # Configuration
     "api_key",
     "api_url",
+    # FHIR interop helpers
+    "get_async_fhirpy_client",
+    "get_fhir_server_url",
+    "get_fhirpy_client",
     "max_retries",
     "timeout",
 ]

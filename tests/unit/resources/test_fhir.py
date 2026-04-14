@@ -573,3 +573,200 @@ class TestFhirPropertyCaching:
         fhir1 = sync_client.fhir
         fhir2 = sync_client.fhir
         assert fhir1 is fhir2
+
+
+# -- Type interop / duck typing ---------------------------------------------
+
+
+class _DuckCoding:
+    """Stand-in for a fhir.resources or fhirpy coding object."""
+
+    def __init__(
+        self,
+        system: str | None = None,
+        code: str | None = None,
+        display: str | None = None,
+    ) -> None:
+        self.system = system
+        self.code = code
+        self.display = display
+
+
+class _DuckCodeableConcept:
+    """Stand-in for a CodeableConcept-like object."""
+
+    def __init__(self, coding: list[object], text: str | None = None) -> None:
+        self.coding = coding
+        self.text = text
+
+
+class TestExtractCodingHelper:
+    """Tests for ``_extract_coding`` and ``_coding_to_dict`` normalizers."""
+
+    def test_extract_dict(self) -> None:
+        from omophub.resources.fhir import _extract_coding
+
+        assert _extract_coding(
+            {"system": "http://snomed.info/sct", "code": "44054006", "display": "T2DM"}
+        ) == ("http://snomed.info/sct", "44054006", "T2DM")
+
+    def test_extract_typed_dict(self) -> None:
+        from omophub.resources.fhir import _extract_coding
+
+        # Coding is a TypedDict; passing as dict literal exercises the dict branch.
+        coding = {"system": "http://loinc.org", "code": "2339-0"}
+        assert _extract_coding(coding) == (
+            "http://loinc.org",
+            "2339-0",
+            None,
+        )
+
+    def test_extract_duck_object(self) -> None:
+        from omophub.resources.fhir import _extract_coding
+
+        obj = _DuckCoding(system="http://snomed.info/sct", code="44054006")
+        assert _extract_coding(obj) == (
+            "http://snomed.info/sct",
+            "44054006",
+            None,
+        )
+
+    def test_extract_missing_attrs(self) -> None:
+        from omophub.resources.fhir import _extract_coding
+
+        class Empty:
+            pass
+
+        assert _extract_coding(Empty()) == (None, None, None)
+
+    def test_coding_to_dict_drops_none(self) -> None:
+        from omophub.resources.fhir import _coding_to_dict
+
+        obj = _DuckCoding(system="http://snomed.info/sct", code="44054006")
+        payload = _coding_to_dict(obj)
+        assert payload == {
+            "system": "http://snomed.info/sct",
+            "code": "44054006",
+        }
+
+
+class TestFhirDuckTyping:
+    """Verify resolver methods accept dict, TypedDict, and duck objects."""
+
+    @respx.mock
+    def test_resolve_with_coding_dict(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Passing ``coding=`` as a dict produces the same upstream payload."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
+        )
+        sync_client.fhir.resolve(
+            coding={
+                "system": "http://snomed.info/sct",
+                "code": "44054006",
+            },
+        )
+        sent = route.calls.last.request.content.decode()
+        assert "http://snomed.info/sct" in sent
+        assert "44054006" in sent
+
+    @respx.mock
+    def test_resolve_with_duck_object(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Passing ``coding=`` as a duck object works via ``getattr``."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
+        )
+        sync_client.fhir.resolve(
+            coding=_DuckCoding(
+                system="http://snomed.info/sct",
+                code="44054006",
+            ),
+        )
+        sent = route.calls.last.request.content.decode()
+        assert "http://snomed.info/sct" in sent
+        assert "44054006" in sent
+
+    @respx.mock
+    def test_explicit_kwargs_win_over_coding(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Explicit ``system``/``code`` kwargs override ``coding`` values."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
+        )
+        sync_client.fhir.resolve(
+            system="http://loinc.org",
+            code="2339-0",
+            coding=_DuckCoding(
+                system="http://snomed.info/sct",
+                code="44054006",
+            ),
+        )
+        sent = route.calls.last.request.content.decode()
+        assert "http://loinc.org" in sent
+        assert "2339-0" in sent
+        assert "http://snomed.info/sct" not in sent
+
+    @respx.mock
+    def test_resolve_batch_mixed_inputs(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """``resolve_batch`` accepts a mixed list of dicts and duck objects."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {
+                        "results": [],
+                        "summary": {"total": 2, "resolved": 0, "failed": 2},
+                    },
+                    "meta": {
+                        "request_id": "t",
+                        "timestamp": "2026-04-10T00:00:00Z",
+                        "vocab_release": "2025.2",
+                    },
+                },
+            )
+        )
+        sync_client.fhir.resolve_batch(
+            [
+                {"system": "http://snomed.info/sct", "code": "44054006"},
+                _DuckCoding(
+                    system="http://hl7.org/fhir/sid/icd-10-cm",
+                    code="E11.9",
+                ),
+            ],
+        )
+        sent = route.calls.last.request.content.decode()
+        assert "44054006" in sent
+        assert "E11.9" in sent
+
+    @respx.mock
+    def test_resolve_codeable_concept_from_duck_object(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """``resolve_codeable_concept`` accepts a full CodeableConcept-like object."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(
+                200, json=CODEABLE_CONCEPT_RESPONSE
+            )
+        )
+        cc = _DuckCodeableConcept(
+            coding=[
+                _DuckCoding(
+                    system="http://snomed.info/sct",
+                    code="44054006",
+                ),
+                {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9"},
+            ],
+            text="Type 2 diabetes mellitus",
+        )
+        sync_client.fhir.resolve_codeable_concept(cc)
+        sent = route.calls.last.request.content.decode()
+        assert "44054006" in sent
+        assert "E11.9" in sent
+        assert "Type 2 diabetes mellitus" in sent

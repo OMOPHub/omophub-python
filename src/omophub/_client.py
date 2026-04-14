@@ -108,6 +108,19 @@ class OMOPHub:
         return self._fhir
 
     @property
+    def fhir_server_url(self) -> str:
+        """URL of the OMOPHub FHIR Terminology Service (R4).
+
+        Use this when configuring an external FHIR client library
+        (``fhirpy``, ``fhir.resources``, ``httpx``) to talk directly
+        to OMOPHub's FHIR endpoint. For other FHIR versions, call
+        :func:`omophub.fhir_interop.get_fhir_server_url` directly.
+        """
+        from .fhir_interop import get_fhir_server_url
+
+        return get_fhir_server_url("r4")
+
+    @property
     def concepts(self) -> Concepts:
         """Access the concepts resource."""
         if self._concepts is None:
@@ -245,6 +258,16 @@ class AsyncOMOPHub:
         if self._fhir is None:
             self._fhir = AsyncFhir(self._request)
         return self._fhir
+
+    @property
+    def fhir_server_url(self) -> str:
+        """URL of the OMOPHub FHIR Terminology Service (R4).
+
+        See :attr:`OMOPHub.fhir_server_url` for details.
+        """
+        from .fhir_interop import get_fhir_server_url
+
+        return get_fhir_server_url("r4")
 
     @property
     def concepts(self) -> AsyncConcepts:

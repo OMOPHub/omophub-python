@@ -17,6 +17,10 @@ from .concept import (
 )
 from .domain import Domain, DomainCategory, DomainStats, DomainSummary
 from .fhir import (
+    CodeableConcept,
+    CodeableConceptLike,
+    Coding,
+    CodingLike,
     FhirBatchResult,
     FhirBatchSummary,
     FhirCodeableConceptResult,
@@ -82,6 +86,10 @@ __all__ = [
     "BulkSemanticSearchInput",
     "BulkSemanticSearchResponse",
     "BulkSemanticSearchResultItem",
+    "CodeableConcept",
+    "CodeableConceptLike",
+    "Coding",
+    "CodingLike",
     "Concept",
     "ConceptSummary",
     "Descendant",

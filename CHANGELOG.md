@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-04-14
+
+### Added
+
+- **FHIR type interoperability** (`client.fhir.*`): The resolver now
+  accepts any Coding-like input via duck typing, so pipelines that
+  already parse FHIR with `fhir.resources` or `fhirpy` can pass those
+  objects directly - no manual conversion.
+  - New `coding=` kwarg on `Fhir.resolve` / `AsyncFhir.resolve`. Accepts
+    a plain dict, the `omophub.types.fhir.Coding` TypedDict, or any
+    object exposing `.system` / `.code` / `.display` attributes (e.g.
+    `fhir.resources.Coding`, `fhirpy` codings).
+  - `Fhir.resolve_batch` / `AsyncFhir.resolve_batch` now accept a
+    mixed list of dicts and Coding-like objects; each item is
+    normalized to the wire format automatically.
+  - `Fhir.resolve_codeable_concept` / async counterpart now accept
+    either a list of Coding-likes (existing) or a full
+    CodeableConcept-like object exposing `.coding` and `.text`
+    (new); explicit `text=` kwarg still wins when both are passed.
+  - Explicit `system` / `code` kwargs override the corresponding
+    fields on a `coding=` input - handy for last-mile overrides.
+- **New FHIR type definitions** in `omophub.types.fhir`:
+  - `Coding` and `CodeableConcept` lightweight TypedDicts
+  - `CodingLike` and `CodeableConceptLike` runtime-checkable
+    `Protocol`s for structural matching against external libraries.
+- **FHIR client interop helpers** (`omophub.fhir_interop`): Thin
+  helpers for configuring an external FHIR client library against
+  the OMOPHub FHIR Terminology Service.
+  - `get_fhir_server_url(version)` returns the FHIR base URL for
+    `"r4"` (default), `"r4b"`, `"r5"`, or `"r6"`.
+  - `get_fhirpy_client(api_key, version)` and
+    `get_async_fhirpy_client(api_key, version)` return `fhirpy`
+    clients pre-wired with the right URL and `Authorization: Bearer`
+    header. `fhirpy` is imported lazily, so it is never a required
+    dependency; a helpful `ImportError` with install instructions is
+    raised only when you actually call the helper.
+  - All three helpers are re-exported from the top-level `omophub`
+    namespace.
+- **`OMOPHub.fhir_server_url` / `AsyncOMOPHub.fhir_server_url`**:
+  Convenience read-only property returning the R4 FHIR endpoint for
+  drop-in use with external FHIR clients (`httpx`, `fhirpy`,
+  `fhir.resources`).
+- **Optional extras** in `pyproject.toml`:
+  - `pip install omophub[fhirpy]` pulls in `fhirpy>=1.4.0`.
+  - `pip install omophub[fhir-resources]` pulls in
+    `fhir.resources>=7.0.0`.
+  Both are purely optional; duck typing means neither is required
+  for core SDK use.
+
+### Changed
+
+- `Fhir.resolve_batch` signature broadened from
+  `codings: list[dict[str, str | None]]` to
+  `codings: list[CodingInput]` where `CodingInput` is the union of
+  dict, `Coding` TypedDict, and `CodingLike` protocol. Existing
+  call sites keep working unchanged.
+- `Fhir.resolve_codeable_concept` signature broadened from
+  `coding: list[dict[str, str]]` to
+  `coding: list[CodingInput] | CodeableConceptInput`, accepting
+  either the legacy list-of-codings shape or a full
+  CodeableConcept-like object.
+
+### Tests
+
+- 16 new unit tests covering `_extract_coding`, `_coding_to_dict`,
+  and duck-typed inputs across `resolve`, `resolve_batch`, and
+  `resolve_codeable_concept` on the sync client. Explicit-kwargs-win
+  precedence is covered.
+- New `tests/unit/test_fhir_interop.py` with 10 cases: URL builder
+  for all four FHIR versions, `fhirpy` lazy import with stubbed
+  success and missing-module failure paths, and the
+  `fhir_server_url` property on both sync and async clients.
+- 5 new integration tests in `tests/integration/test_fhir.py`
+  exercising the new `coding=` kwarg, mixed dict + duck-typed batch
+  inputs, CodeableConcept-like object resolution, and the
+  `fhir_server_url` property against the live API.
+
 ## [1.6.0] - 2026-04-10
 
 ### Added
