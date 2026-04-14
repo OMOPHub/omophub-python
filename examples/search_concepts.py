@@ -7,16 +7,17 @@ semantic search, similarity search, bulk lexical search, and bulk semantic searc
 
 import omophub
 
-client = omophub.OMOPHub(api_key="oh_your_api_key")
+# Reads OMOPHUB_API_KEY from the environment. To pass it explicitly:
+#   client = omophub.OMOPHub(api_key="oh_your_api_key")
+client = omophub.OMOPHub()
 
 
 def basic_search() -> None:
     """Demonstrate basic concept search."""
     print("=== Basic Search ===")
 
-    # Simple text search
-    results = client.search.basic("heart attack")
-    concepts = results.get("concepts", results)
+    # Simple text search - returns a flat list of concept dicts
+    concepts = client.search.basic("heart attack")
     print(f"Found {len(concepts)} concepts for 'heart attack'")
 
     for c in concepts[:3]:
@@ -28,14 +29,13 @@ def filtered_search() -> None:
     print("\n=== Filtered Search ===")
 
     # Search in specific vocabularies
-    results = client.search.basic(
+    concepts = client.search.basic(
         "myocardial infarction",
         vocabulary_ids=["SNOMED", "ICD10CM"],
         domain_ids=["Condition"],
         standard_concept="S",  # Only standard concepts
         page_size=10,
     )
-    concepts = results.get("concepts", results)
     print(f"Found {len(concepts)} standard condition concepts")
 
     for c in concepts[:5]:
@@ -43,11 +43,16 @@ def filtered_search() -> None:
 
 
 def bulk_lexical_search() -> None:
-    """Demonstrate bulk lexical search — multiple queries in one call."""
+    """Demonstrate bulk lexical search — multiple queries in one call.
+
+    ``bulk_basic`` returns a list of per-query result objects. Each item
+    has ``search_id``, ``query``, ``results`` (a nested list), ``status``,
+    and ``duration``.
+    """
     print("\n=== Bulk Lexical Search ===")
 
     # Search for multiple terms at once (up to 50)
-    results = client.search.bulk_basic(
+    items = client.search.bulk_basic(
         [
             {"search_id": "q1", "query": "diabetes mellitus"},
             {"search_id": "q2", "query": "hypertension"},
@@ -56,31 +61,42 @@ def bulk_lexical_search() -> None:
         defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5},
     )
 
-    for item in results["results"]:
-        print(f"  {item['search_id']}: {len(item['results'])} results ({item['status']})")
+    for item in items:
+        print(
+            f"  {item['search_id']}: {len(item['results'])} results ({item['status']})"
+        )
 
     # Per-query overrides — different domains per query
-    results = client.search.bulk_basic(
+    items = client.search.bulk_basic(
         [
-            {"search_id": "conditions", "query": "diabetes", "domain_ids": ["Condition"]},
+            {
+                "search_id": "conditions",
+                "query": "diabetes",
+                "domain_ids": ["Condition"],
+            },
             {"search_id": "drugs", "query": "metformin", "domain_ids": ["Drug"]},
         ],
         defaults={"vocabulary_ids": ["SNOMED", "RxNorm"], "page_size": 3},
     )
 
     print("\n  Per-query domain overrides:")
-    for item in results["results"]:
+    for item in items:
         print(f"    {item['search_id']}:")
-        for c in item["results"]:
+        for c in item["results"][:3]:
             print(f"      {c['concept_name']} ({c['vocabulary_id']}/{c['domain_id']})")
 
 
 def bulk_semantic_search() -> None:
-    """Demonstrate bulk semantic search — multiple NLP queries in one call."""
+    """Demonstrate bulk semantic search — multiple NLP queries in one call.
+
+    ``bulk_semantic`` returns a dict with ``results`` (list of per-query
+    items), ``total_searches``, ``completed_count``, ``failed_count``,
+    and ``total_duration``.
+    """
     print("\n=== Bulk Semantic Search ===")
 
     # Search for multiple natural-language queries (up to 25)
-    results = client.search.bulk_semantic(
+    response = client.search.bulk_semantic(
         [
             {"search_id": "s1", "query": "heart failure treatment options"},
             {"search_id": "s2", "query": "type 2 diabetes medication"},
@@ -89,26 +105,35 @@ def bulk_semantic_search() -> None:
         defaults={"threshold": 0.5, "page_size": 5},
     )
 
-    for item in results["results"]:
+    print(
+        f"  Completed {response['completed_count']}/{response['total_searches']} "
+        f"in {response.get('total_duration', '?')}"
+    )
+    for item in response["results"]:
         count = item.get("result_count", len(item["results"]))
         print(f"  {item['search_id']}: {count} results ({item['status']})")
 
         # Show top result per query
         if item["results"]:
             top = item["results"][0]
-            print(f"    Top: {top['concept_name']} (score: {top['similarity_score']:.2f})")
+            print(
+                f"    Top: {top['concept_name']} (score: {top['similarity_score']:.2f})"
+            )
 
 
 def autocomplete_example() -> None:
-    """Demonstrate autocomplete suggestions."""
+    """Demonstrate autocomplete suggestions.
+
+    ``concepts.suggest`` returns a flat list of concept dicts - the same
+    shape as ``search.basic`` - so you read ``concept_name`` directly.
+    """
     print("\n=== Autocomplete ===")
 
-    # Get suggestions as user types
     suggestions = client.concepts.suggest("hypert", page_size=5)
 
     print("Suggestions for 'hypert':")
     for s in suggestions[:5]:
-        print(f"  {s['suggestion']}")
+        print(f"  [{s['vocabulary_id']}] {s['concept_name']}")
 
 
 def pagination_example() -> None:
@@ -164,24 +189,31 @@ def semantic_pagination() -> None:
 
 
 def similarity_search() -> None:
-    """Demonstrate similarity search."""
+    """Demonstrate similarity search.
+
+    ``search.similar`` returns a dict with a ``similar_concepts`` key
+    (not ``results``) - each item has the standard concept fields plus
+    a ``similarity_score``.
+    """
     print("\n=== Similarity Search ===")
 
     # Find concepts similar to Type 2 diabetes mellitus (concept_id=201826)
-    results = client.search.similar(concept_id=201826, algorithm="hybrid")
+    response = client.search.similar(concept_id=201826, algorithm="hybrid")
     print("Concepts similar to 'Type 2 diabetes mellitus':")
-    for r in results["results"][:5]:
-        print(f"  {r['concept_name']} (score: {r['similarity_score']:.2f})")
+    for r in response["similar_concepts"][:5]:
+        score = r.get("similarity_score")
+        score_str = f"{score:.2f}" if score is not None else "?"
+        print(f"  {r['concept_name']} (score: {score_str})")
 
     # Find similar using a natural language query with semantic algorithm
-    results = client.search.similar(
+    response = client.search.similar(
         query="medications for high blood pressure",
         algorithm="semantic",
         similarity_threshold=0.6,
         vocabulary_ids=["RxNorm"],
         include_scores=True,
     )
-    print(f"\n  Found {len(results['results'])} similar RxNorm concepts")
+    print(f"\n  Found {len(response['similar_concepts'])} similar RxNorm concepts")
 
 
 if __name__ == "__main__":

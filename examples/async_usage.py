@@ -11,14 +11,13 @@ async def basic_async_usage() -> None:
     print("=== Basic Async Usage ===")
 
     # Use async context manager
-    async with omophub.AsyncOMOPHub(api_key="oh_your_api_key") as client:
+    async with omophub.AsyncOMOPHub() as client:
         # Get a concept
         concept = await client.concepts.get(201826)
         print(f"Concept: {concept['concept_name']}")
 
-        # Search
-        results = await client.search.basic("diabetes", page_size=5)
-        concepts = results.get("concepts", [])
+        # Search - returns a flat list of concept dicts
+        concepts = await client.search.basic("diabetes", page_size=5)
         print(f"Found {len(concepts)} concepts")
 
 
@@ -26,9 +25,9 @@ async def concurrent_requests() -> None:
     """Demonstrate concurrent API requests."""
     print("\n=== Concurrent Requests ===")
 
-    async with omophub.AsyncOMOPHub(api_key="oh_your_api_key") as client:
+    async with omophub.AsyncOMOPHub() as client:
         # Fetch multiple concepts concurrently
-        concept_ids = [201826, 4329847, 1112807, 40483312, 37311061]
+        concept_ids = [201826, 4329847, 1112807, 316866, 37311061]
 
         tasks = [client.concepts.get(cid) for cid in concept_ids]
         concepts = await asyncio.gather(*tasks)
@@ -42,26 +41,20 @@ async def parallel_searches() -> None:
     """Demonstrate parallel search operations."""
     print("\n=== Parallel Searches ===")
 
-    async with omophub.AsyncOMOPHub(api_key="oh_your_api_key") as client:
-        # Run multiple searches in parallel
+    async with omophub.AsyncOMOPHub() as client:
+        # Run multiple searches in parallel. ``search.basic`` returns a
+        # flat list of concept dicts for the current page; for the full
+        # total count we iterate across pages via ``basic_iter``.
         search_terms = ["diabetes", "hypertension", "asthma", "depression"]
 
-        async def search_and_count(term: str) -> tuple[str, int]:
-            results = await client.search.basic(term, page_size=1)
-            # Get total from pagination metadata if available
-            meta = results.get("meta", {}).get("pagination", {})
-            total_items = meta.get("total_items")
-            if total_items is not None:
-                total = total_items
-            else:
-                concepts = results.get("concepts", [])
-                total = len(concepts) if isinstance(concepts, list) else 0
-            return term, total
+        async def page_count(term: str) -> tuple[str, int]:
+            concepts = await client.search.basic(term, page_size=50)
+            return term, len(concepts)
 
-        tasks = [search_and_count(term) for term in search_terms]
+        tasks = [page_count(term) for term in search_terms]
         results = await asyncio.gather(*tasks)
 
-        print("Search results:")
+        print("First-page hit counts:")
         for term, count in results:
             print(f"  '{term}': {count} concepts")
 

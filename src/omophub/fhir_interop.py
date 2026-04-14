@@ -56,7 +56,13 @@ def get_fhirpy_client(api_key: str, version: FhirVersion = "r4") -> Any:
         ImportError: if ``fhirpy`` is not installed.
     """
     try:
-        from fhirpy import SyncFHIRClient  # type: ignore[import-not-found]
+        # `fhirpy` is an optional extra; mypy's per-module caching means
+        # only one of the two conditional imports in this file is flagged
+        # with `import-not-found`, depending on order, so we silence both
+        # and pair with `unused-ignore` to keep `warn_unused_ignores` happy.
+        from fhirpy import (  # type: ignore[import-not-found, unused-ignore]
+            SyncFHIRClient,
+        )
     except ImportError as e:  # pragma: no cover - import guard
         raise ImportError(
             "fhirpy is required for FHIR client interop. "
@@ -74,7 +80,9 @@ def get_async_fhirpy_client(api_key: str, version: FhirVersion = "r4") -> Any:
     Async counterpart of :func:`get_fhirpy_client`. Same install hint.
     """
     try:
-        from fhirpy import AsyncFHIRClient
+        from fhirpy import (  # type: ignore[import-not-found, unused-ignore]
+            AsyncFHIRClient,
+        )
     except ImportError as e:  # pragma: no cover - import guard
         raise ImportError(
             "fhirpy is required for FHIR client interop. "

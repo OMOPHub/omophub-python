@@ -42,21 +42,31 @@ def _extract_coding(
     )
 
 
+# Keys the FHIR Concept Resolver accepts on a single coding item. Any
+# other keys in a dict input (e.g. ``userSelected``, ``extension``,
+# ``version`` from ``fhir.resources.Coding.model_dump()``) are dropped
+# so the server never sees FHIR metadata it does not understand.
+_ALLOWED_CODING_KEYS: tuple[str, ...] = (
+    "system",
+    "code",
+    "display",
+    "vocabulary_id",
+)
+
+
 def _coding_to_dict(coding_input: object) -> dict[str, Any]:
     """Convert any Coding-like input to a wire-format dict.
 
-    Preserves only the keys the resolver endpoint understands. Skips keys
-    whose values are ``None`` so the request payload stays tight.
+    Preserves only the keys the resolver endpoint understands
+    (:data:`_ALLOWED_CODING_KEYS`). Skips keys whose values are ``None``
+    so the request payload stays tight.
     """
     if isinstance(coding_input, dict):
-        src: dict[str, Any] = coding_input
-    else:
-        src = {
-            "system": getattr(coding_input, "system", None),
-            "code": getattr(coding_input, "code", None),
-            "display": getattr(coding_input, "display", None),
-            "vocabulary_id": getattr(coding_input, "vocabulary_id", None),
+        src: dict[str, Any] = {
+            key: coding_input.get(key) for key in _ALLOWED_CODING_KEYS
         }
+    else:
+        src = {key: getattr(coding_input, key, None) for key in _ALLOWED_CODING_KEYS}
     return {k: v for k, v in src.items() if v is not None}
 
 

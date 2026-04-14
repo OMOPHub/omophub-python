@@ -31,6 +31,7 @@ extra is not installed - this script runs end-to-end without them.
 
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -39,7 +40,12 @@ import omophub
 if TYPE_CHECKING:
     from omophub.types.fhir import Coding
 
-API_KEY = "oh_your_api_key"
+# Read from the environment so the example runs out-of-the-box:
+#   export OMOPHUB_API_KEY=oh_...
+# Scenario 8 (get_fhirpy_client) needs an explicit key string, so we
+# materialize it once here. All other scenarios use omophub.OMOPHub()
+# directly, which also picks up OMOPHUB_API_KEY.
+API_KEY = os.environ.get("OMOPHUB_API_KEY", "oh_your_api_key")
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +57,7 @@ def coding_kwarg_with_dict() -> None:
     """Pass a plain dict via the new ``coding=`` kwarg."""
     print("=== 1. coding= kwarg with a plain dict ===")
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             coding={
@@ -76,7 +82,7 @@ def coding_kwarg_with_typed_dict() -> None:
     """Use omophub's lightweight `Coding` TypedDict for IDE autocomplete."""
     print("\n=== 2. coding= kwarg with omophub.types.fhir.Coding ===")
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         coding: Coding = {
             "system": "http://loinc.org",
@@ -105,7 +111,7 @@ def coding_kwarg_with_duck_object() -> None:
     """
     print("\n=== 3. coding= kwarg with a duck-typed object ===")
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         # SimpleNamespace stands in for any Coding-like class - fhir.resources,
         # fhirpy, or your own domain model.
@@ -143,7 +149,7 @@ def coding_kwarg_with_fhir_resources() -> None:
         print("  Skipped: pip install omophub[fhir-resources]")
         return
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         # Single Coding from fhir.resources
         snomed = FhirCoding(
@@ -191,7 +197,7 @@ def mixed_batch_inputs() -> None:
     """A single `resolve_batch` accepts heterogeneous coding shapes."""
     print("\n=== 5. resolve_batch with mixed input shapes ===")
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         typed: Coding = {"system": "http://loinc.org", "code": "2339-0"}
         duck = SimpleNamespace(
@@ -232,7 +238,7 @@ def explicit_kwargs_override_coding() -> None:
     """
     print("\n=== 6. Explicit kwargs override coding= fields ===")
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         base = SimpleNamespace(
             system="http://snomed.info/sct",
@@ -262,7 +268,7 @@ def connection_helper_urls() -> None:
 
     from omophub import get_fhir_server_url
 
-    client = omophub.OMOPHub(api_key=API_KEY)
+    client = omophub.OMOPHub()
     try:
         # Property on the client returns the R4 base URL
         print(f"  client.fhir_server_url = {client.fhir_server_url}")

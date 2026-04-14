@@ -10,7 +10,7 @@ def handle_not_found() -> None:
     """Handle concept not found errors."""
     print("=== Handling Not Found ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         # Try to get a non-existent concept
@@ -40,7 +40,7 @@ def handle_rate_limit() -> None:
     """Handle rate limit errors with retry."""
     print("\n=== Handling Rate Limits ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     for i in range(5):
         try:
@@ -58,7 +58,7 @@ def handle_validation() -> None:
     """Handle validation errors."""
     print("\n=== Handling Validation Errors ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         # Try an invalid request
@@ -73,7 +73,7 @@ def comprehensive_error_handling() -> None:
     """Demonstrate comprehensive error handling."""
     print("\n=== Comprehensive Error Handling ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         concept = client.concepts.get(201826)

@@ -649,6 +649,53 @@ class TestExtractCodingHelper:
             "code": "44054006",
         }
 
+    def test_coding_to_dict_filters_unknown_keys_from_dict(self) -> None:
+        """Dict inputs with FHIR metadata keys must be filtered to the
+        resolver's allowed key set - the server should never see
+        ``userSelected``, ``extension``, or version markers from
+        ``fhir.resources.Coding.model_dump()``.
+        """
+        from omophub.resources.fhir import _ALLOWED_CODING_KEYS, _coding_to_dict
+
+        model_dump_style = {
+            "system": "http://snomed.info/sct",
+            "code": "44054006",
+            "display": "Type 2 diabetes mellitus",
+            "version": "20240301",  # Not in allowed keys
+            "userSelected": True,  # FHIR extension
+            "extension": [{"url": "http://example.com"}],
+            "id": "coding-1",
+        }
+        payload = _coding_to_dict(model_dump_style)
+        assert set(payload.keys()) <= set(_ALLOWED_CODING_KEYS)
+        assert payload == {
+            "system": "http://snomed.info/sct",
+            "code": "44054006",
+            "display": "Type 2 diabetes mellitus",
+        }
+
+    def test_coding_to_dict_filters_unknown_attrs_from_object(self) -> None:
+        """Duck objects with extra attributes are also filtered to the
+        allowed key set.
+        """
+        from types import SimpleNamespace
+
+        from omophub.resources.fhir import _ALLOWED_CODING_KEYS, _coding_to_dict
+
+        obj = SimpleNamespace(
+            system="http://snomed.info/sct",
+            code="44054006",
+            display=None,
+            userSelected=True,  # Should not leak into payload
+            extension="anything",
+        )
+        payload = _coding_to_dict(obj)
+        assert set(payload.keys()) <= set(_ALLOWED_CODING_KEYS)
+        assert payload == {
+            "system": "http://snomed.info/sct",
+            "code": "44054006",
+        }
+
 
 class TestFhirDuckTyping:
     """Verify resolver methods accept dict, TypedDict, and duck objects."""
@@ -751,9 +798,7 @@ class TestFhirDuckTyping:
     ) -> None:
         """``resolve_codeable_concept`` accepts a full CodeableConcept-like object."""
         route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
-            return_value=Response(
-                200, json=CODEABLE_CONCEPT_RESPONSE
-            )
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
         )
         cc = _DuckCodeableConcept(
             coding=[
@@ -770,3 +815,66 @@ class TestFhirDuckTyping:
         assert "44054006" in sent
         assert "E11.9" in sent
         assert "Type 2 diabetes mellitus" in sent
+
+    @respx.mock
+    def test_resolve_codeable_concept_from_dict(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """``resolve_codeable_concept`` accepts a dict-shaped CodeableConcept."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+        cc = {
+            "coding": [
+                {"system": "http://snomed.info/sct", "code": "44054006"},
+                {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9"},
+            ],
+            "text": "Type 2 diabetes mellitus",
+        }
+        sync_client.fhir.resolve_codeable_concept(cc)
+        sent = route.calls.last.request.content.decode()
+        assert "44054006" in sent
+        assert "E11.9" in sent
+        assert "Type 2 diabetes mellitus" in sent
+
+    @respx.mock
+    def test_resolve_codeable_concept_from_dict_text_only(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Dict CodeableConcept with no ``coding`` key and no ``text`` is valid.
+
+        Exercises the ``cc_input.get("coding") or []`` fallback and the
+        ``cc_input.get("text")`` path when either field is absent.
+        """
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+        # Pass an empty dict - both keys missing; extracted text is None and
+        # gets overridden by the explicit ``text=`` kwarg.
+        sync_client.fhir.resolve_codeable_concept({}, text="diabetes")
+        sent = route.calls.last.request.content.decode()
+        assert "diabetes" in sent
+        assert '"coding":[]' in sent.replace(" ", "")
+
+    @respx.mock
+    def test_resolve_codeable_concept_with_tuple_coding(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """A duck object whose ``.coding`` is a non-list iterable is converted."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+        cc = _DuckCodeableConcept(
+            coding=(  # tuple, not a list - exercises the list() conversion
+                _DuckCoding(
+                    system="http://snomed.info/sct",
+                    code="44054006",
+                ),
+                {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9"},
+            ),
+            text=None,
+        )
+        sync_client.fhir.resolve_codeable_concept(cc)
+        sent = route.calls.last.request.content.decode()
+        assert "44054006" in sent
+        assert "E11.9" in sent
