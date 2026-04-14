@@ -32,6 +32,10 @@ Working with OHDSI ATHENA vocabularies traditionally requires downloading multi-
 
 ```bash
 pip install omophub
+
+# Optional extras for FHIR client interop
+pip install omophub[fhirpy]          # Pre-wired fhirpy client
+pip install omophub[fhir-resources]  # Install marker for fhir.resources
 ```
 
 ## Quick Start
@@ -97,6 +101,70 @@ result = client.fhir.resolve_codeable_concept(
 )
 print(result["best_match"]["resolution"]["source_concept"]["vocabulary_id"])  # "SNOMED"
 ```
+
+### Type Interoperability
+
+The resolver accepts any Coding-like input via duck typing - a plain dict, omophub's lightweight `Coding` TypedDict, or any object with `.system` / `.code` attributes (e.g. `fhir.resources.Coding`, `fhirpy` codings).
+
+```python
+from omophub.types.fhir import Coding
+
+# omophub's TypedDict - IDE autocomplete, no extra deps
+coding: Coding = {"system": "http://snomed.info/sct", "code": "44054006"}
+result = client.fhir.resolve(coding=coding)
+
+# fhir.resources objects work via duck typing - no conversion needed
+from fhir.resources.R4B.coding import Coding as FhirCoding
+fhir_coding = FhirCoding(system="http://snomed.info/sct", code="44054006")
+result = client.fhir.resolve(coding=fhir_coding)
+
+# Mixed shapes in a single batch call
+result = client.fhir.resolve_batch([
+    {"system": "http://snomed.info/sct", "code": "44054006"},   # dict
+    FhirCoding(system="http://loinc.org", code="2339-0"),        # fhir.resources
+])
+```
+
+`fhir.resources` is **never** a required dependency. See [`examples/fhir_interop.py`](./examples/fhir_interop.py) for the full set of supported input shapes.
+
+### FHIR Client Interop
+
+Point external FHIR client libraries at OMOPHub's FHIR Terminology Service directly - useful when you need raw FHIR `Parameters` / `Bundle` responses instead of the Concept Resolver envelope.
+
+```python
+from omophub import OMOPHub, get_fhir_server_url
+
+client = OMOPHub(api_key="oh_xxx")
+
+# Property on the client returns the R4 base URL
+print(client.fhir_server_url)
+# "https://fhir.omophub.com/fhir/r4"
+
+# Helper for other FHIR versions
+print(get_fhir_server_url("r5"))
+# "https://fhir.omophub.com/fhir/r5"
+```
+
+For `fhirpy`, install the optional extra and use the pre-wired client:
+
+```bash
+pip install omophub[fhirpy]
+```
+
+```python
+from omophub import get_fhirpy_client
+
+fhir = get_fhirpy_client("oh_xxx")
+
+# Call CodeSystem/$lookup directly via fhirpy
+params = fhir.execute(
+    "CodeSystem/$lookup",
+    method="GET",
+    params={"system": "http://snomed.info/sct", "code": "44054006"},
+)
+```
+
+**When to use which**: the Concept Resolver (`client.fhir.resolve`) gives you OMOP-enriched answers - standard concept ID, CDM target table, mapping quality. Use `fhirpy` via `get_fhirpy_client()` when you need raw FHIR responses for FHIR-native tooling.
 
 ## Semantic Search
 

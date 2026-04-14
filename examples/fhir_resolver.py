@@ -29,7 +29,7 @@ def resolve_snomed() -> None:
     """Resolve a SNOMED CT code directly to its OMOP concept."""
     print("=== 1. SNOMED Direct Resolution ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             system="http://snomed.info/sct",
@@ -57,7 +57,7 @@ def resolve_icd10_mapped() -> None:
     """Resolve a non-standard ICD-10-CM code — automatically traverses Maps to."""
     print("\n=== 2. ICD-10-CM → SNOMED Mapping ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             system="http://hl7.org/fhir/sid/icd-10-cm",
@@ -89,7 +89,7 @@ def resolve_loinc() -> None:
     """Resolve a LOINC lab code to the OMOP measurement table."""
     print("\n=== 3. LOINC → Measurement ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             system="http://loinc.org",
@@ -116,7 +116,7 @@ def resolve_rxnorm() -> None:
     """Resolve an RxNorm drug code to the OMOP drug_exposure table."""
     print("\n=== 4. RxNorm → Drug Exposure ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             system="http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -141,7 +141,7 @@ def resolve_text_only() -> None:
     """Resolve using only display text — triggers BioLORD semantic search."""
     print("\n=== 5. Text-Only Semantic Fallback ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         # No system or code — just natural language text
         result = client.fhir.resolve(
@@ -168,7 +168,7 @@ def resolve_vocabulary_id_bypass() -> None:
     """Use vocabulary_id directly when you already know the OMOP vocabulary."""
     print("\n=== 6. Vocabulary ID Bypass ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         # Skip URI resolution — go straight to the vocabulary
         result = client.fhir.resolve(
@@ -193,7 +193,7 @@ def resolve_with_recommendations() -> None:
     """Get Phoebe-recommended related concepts alongside the resolution."""
     print("\n=== 7. With Phoebe Recommendations ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve(
             system="http://snomed.info/sct",
@@ -225,7 +225,7 @@ def resolve_with_quality() -> None:
     """Get a mapping quality signal to triage which resolutions need review."""
     print("\n=== 8. With Mapping Quality ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         # Direct SNOMED match → "high" quality
         result = client.fhir.resolve(
@@ -273,7 +273,7 @@ def resolve_batch() -> None:
     """Resolve multiple codings in a single call with per-item error reporting."""
     print("\n=== 9. Batch Resolution ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve_batch(
             [
@@ -324,7 +324,7 @@ def resolve_codeable_concept() -> None:
     """Resolve a CodeableConcept with multiple codings — SNOMED wins by preference."""
     print("\n=== 10. CodeableConcept Resolution ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve_codeable_concept(
             coding=[
@@ -382,7 +382,7 @@ def resolve_codeable_concept_text_fallback() -> None:
     """When no structured coding resolves, fall back to the text field."""
     print("\n=== 11. CodeableConcept Text Fallback ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         result = client.fhir.resolve_codeable_concept(
             coding=[
@@ -420,7 +420,7 @@ async def async_resolve() -> None:
     """Demonstrate async FHIR resolution with concurrent requests."""
     print("\n=== 12. Async FHIR Resolution ===")
 
-    async with omophub.AsyncOMOPHub(api_key="oh_your_api_key") as client:
+    async with omophub.AsyncOMOPHub() as client:
         # Single resolve
         result = await client.fhir.resolve(
             system="http://snomed.info/sct",
@@ -463,7 +463,7 @@ def error_handling_examples() -> None:
     """Demonstrate error responses from the FHIR resolver."""
     print("\n=== Error Handling Examples ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
     try:
         # Unknown code system URI → 400 with suggestion
         print("  Typo in URI:")

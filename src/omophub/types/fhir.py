@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any, Protocol, TypedDict, runtime_checkable
 
 from typing_extensions import NotRequired
 
@@ -78,3 +78,44 @@ class FhirCodeableConceptResult(TypedDict):
     best_match: FhirResolveResult | None
     alternatives: list[FhirResolveResult]
     unresolved: list[dict[str, Any]]
+
+
+class Coding(TypedDict, total=False):
+    """Lightweight FHIR ``Coding`` input type.
+
+    Structurally compatible with ``fhir.resources.Coding`` and ``fhirpy``
+    coding objects. Accepted anywhere the resolver takes a ``coding=`` input.
+    """
+
+    system: str
+    code: str
+    display: str
+    version: str
+
+
+class CodeableConcept(TypedDict, total=False):
+    """Lightweight FHIR ``CodeableConcept`` input type."""
+
+    coding: list[Coding]
+    text: str
+
+
+@runtime_checkable
+class CodingLike(Protocol):
+    """Structural protocol for any object exposing ``system`` and ``code``.
+
+    Lets the resolver accept ``fhir.resources.Coding``, ``fhirpy`` codings,
+    or any user-defined class with ``system``/``code`` attributes without
+    taking a hard dependency on those libraries.
+    """
+
+    system: str | None
+    code: str | None
+
+
+@runtime_checkable
+class CodeableConceptLike(Protocol):
+    """Structural protocol for any object exposing ``coding`` and ``text``."""
+
+    coding: list[Any] | None
+    text: str | None

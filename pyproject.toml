@@ -62,6 +62,11 @@ dev = [
     "mypy>=1.8.0",
     "python-dotenv>=1.0.0",  # For loading .env files in integration tests
 ]
+# External FHIR client libraries. Duck-typed by the resolver, so not
+# required for core SDK use. Install via `pip install omophub[fhirpy]`
+# or `pip install omophub[fhir-resources]` if you want these helpers.
+fhirpy = ["fhirpy>=1.4.0"]
+fhir-resources = ["fhir.resources>=7.0.0"]
 
 [project.urls]
 Homepage = "https://omophub.com"

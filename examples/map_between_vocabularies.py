@@ -8,7 +8,7 @@ def get_mappings() -> None:
     """Get mappings for a concept to other vocabularies."""
     print("=== Concept Mappings ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         # Type 2 diabetes mellitus (SNOMED)
@@ -43,7 +43,7 @@ def map_concepts() -> None:
     """Map multiple concepts to a target vocabulary."""
     print("\n=== Batch Concept Mapping ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         # Map SNOMED concepts to ICD-10-CM
@@ -74,7 +74,7 @@ def lookup_by_code() -> None:
     """Look up a concept by vocabulary code and find its standard mapping."""
     print("\n=== Code Lookup and Mapping ===")
 
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     try:
         # Look up ICD-10-CM code E11 (Type 2 diabetes)

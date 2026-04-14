@@ -6,9 +6,9 @@ import omophub
 
 def main() -> None:
     """Demonstrate basic SDK usage."""
-    # Initialize the client with your API key
-    # You can also set OMOPHUB_API_KEY environment variable
-    client = omophub.OMOPHub(api_key="oh_your_api_key")
+    # Reads OMOPHUB_API_KEY from the environment. To pass it explicitly:
+    #   client = omophub.OMOPHub(api_key="oh_your_api_key")
+    client = omophub.OMOPHub()
 
     # Get a concept by ID
     concept = client.concepts.get(201826)
@@ -18,18 +18,18 @@ def main() -> None:
     print(f"  Domain: {concept['domain_id']}")
     print()
 
-    # Search for concepts
+    # Search for concepts - returns a list of concept dicts
     results = client.search.basic(
         "diabetes",
         vocabulary_ids=["SNOMED"],
         page_size=5,
     )
     print("Search results for 'diabetes':")
-    for c in results.get("concepts", []):
+    for c in results:
         print(f"  {c['concept_id']}: {c['concept_name']}")
     print()
 
-    # List vocabularies
+    # List vocabularies - returns a dict with a 'vocabularies' key
     vocabs = client.vocabularies.list(page_size=5)
     print("Available vocabularies:")
     for v in vocabs.get("vocabularies", []):

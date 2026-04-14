@@ -3,7 +3,9 @@
 
 import omophub
 
-client = omophub.OMOPHub(api_key="oh_your_api_key")
+# Reads OMOPHUB_API_KEY from the environment. To pass it explicitly:
+#   client = omophub.OMOPHub(api_key="oh_your_api_key")
+client = omophub.OMOPHub()
 
 
 def get_ancestors() -> None:
