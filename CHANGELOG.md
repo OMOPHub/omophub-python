@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-05-20
+
+Maintenance release. Dependency and lock-file updates only — there are no
+source code or public API changes. The published runtime dependencies
+(`httpx`, `typing_extensions`) are unchanged; the updates below affect the
+pinned development, testing, and optional-extra dependencies in `uv.lock`
+and are not shipped in the wheel/sdist.
+
+### Security
+
+- Updated pinned development and transitive dependencies in `uv.lock` to
+  resolve reported advisories. None of these affect the published runtime
+  dependencies:
+  - `idna` 3.11 → 3.15 — fixes a bypass of the CVE-2024-3651 mitigation in
+    `idna.encode()` (transitive via `httpx`/`anyio`).
+  - `pytest` 9.0.2 → 9.0.3 — fixes vulnerable tmpdir handling (dev only).
+  - `python-dotenv` 1.2.1 → 1.2.2 — fixes symlink following in `set_key`
+    that allowed arbitrary file overwrite (dev only).
+  - `pygments` 2.19.2 → 2.20.0 — fixes a ReDoS in GUID matching
+    (transitive, dev only).
+
+### Changed
+
+- Bumped `aiohttp` and added `aiohappyeyeballs` in `uv.lock` (#17).
+- Locked the optional FHIR extras (`fhirpy`, `fhir-resources`) and their
+  transitive dependencies in `uv.lock`. These were already declared in
+  `pyproject.toml` but had never been captured in the lock file.
+
 ## [1.7.0] - 2026-04-14
 
 ### Added
@@ -216,7 +244,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/omopHub/omophub-python/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/omopHub/omophub-python/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/omopHub/omophub-python/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/omopHub/omophub-python/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/omopHub/omophub-python/compare/v1.4.1...v1.5.0
