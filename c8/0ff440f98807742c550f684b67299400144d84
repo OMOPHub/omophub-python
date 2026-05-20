@@ -1,0 +1,24 @@
+examples/search_concepts.py
+  s_8057469a3c21cc::t_03f7841251cdb2 59,68
+  s_8057469a3c21cc::t_c45540859f24e3 51-54
+  s_8057469a3c21cc::t_21a6af3ad3c5c4 131-132
+  s_8057469a3c21cc::t_4289a32dc19b45 74,87
+  s_8057469a3c21cc::t_3d780a7aa3a30d 19-22
+  s_8057469a3c21cc::t_658395e21af4d0 33-34,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "c80ff440f98807742c550f684b67299400144d84",
+  "prompts": {},
+  "sessions": {
+    "s_8057469a3c21cc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c0fa5e-4234-4499-95d1-373ac83b7771",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
