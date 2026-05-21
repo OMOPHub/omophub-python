@@ -16,10 +16,8 @@ def basic_search() -> None:
     """Demonstrate basic concept search."""
     print("=== Basic Search ===")
 
-    # ``search.basic`` returns a dict with a ``concepts`` list plus pagination
-    # metadata - read the list from ``result["concepts"]``.
-    result = client.search.basic("heart attack")
-    concepts = result["concepts"]
+    # Simple text search - returns a flat list of concept dicts
+    concepts = client.search.basic("heart attack")
     print(f"Found {len(concepts)} concepts for 'heart attack'")
 
     for c in concepts[:3]:
@@ -30,15 +28,14 @@ def filtered_search() -> None:
     """Demonstrate search with filters."""
     print("\n=== Filtered Search ===")
 
-    # Search in specific vocabularies. Same dict-shaped response as above.
-    result = client.search.basic(
+    # Search in specific vocabularies
+    concepts = client.search.basic(
         "myocardial infarction",
         vocabulary_ids=["SNOMED", "ICD10CM"],
         domain_ids=["Condition"],
         standard_concept="S",  # Only standard concepts
         page_size=10,
     )
-    concepts = result["concepts"]
     print(f"Found {len(concepts)} standard condition concepts")
 
     for c in concepts[:5]:
@@ -48,15 +45,14 @@ def filtered_search() -> None:
 def bulk_lexical_search() -> None:
     """Demonstrate bulk lexical search — multiple queries in one call.
 
-    ``bulk_basic`` returns a dict with a ``results`` list (plus
-    ``total_searches`` / ``completed_searches`` / ``failed_searches``
-    counts). Each item in ``results`` has ``search_id``, ``query``,
-    ``results`` (a nested list of concepts), ``status``, and ``duration``.
+    ``bulk_basic`` returns a list of per-query result objects. Each item
+    has ``search_id``, ``query``, ``results`` (a nested list), ``status``,
+    and ``duration``.
     """
     print("\n=== Bulk Lexical Search ===")
 
     # Search for multiple terms at once (up to 50)
-    response = client.search.bulk_basic(
+    items = client.search.bulk_basic(
         [
             {"search_id": "q1", "query": "diabetes mellitus"},
             {"search_id": "q2", "query": "hypertension"},
@@ -65,13 +61,13 @@ def bulk_lexical_search() -> None:
         defaults={"vocabulary_ids": ["SNOMED"], "page_size": 5},
     )
 
-    for item in response["results"]:
+    for item in items:
         print(
             f"  {item['search_id']}: {len(item['results'])} results ({item['status']})"
         )
 
     # Per-query overrides — different domains per query
-    response = client.search.bulk_basic(
+    items = client.search.bulk_basic(
         [
             {
                 "search_id": "conditions",
@@ -84,7 +80,7 @@ def bulk_lexical_search() -> None:
     )
 
     print("\n  Per-query domain overrides:")
-    for item in response["results"]:
+    for item in items:
         print(f"    {item['search_id']}:")
         for c in item["results"][:3]:
             print(f"      {c['concept_name']} ({c['vocabulary_id']}/{c['domain_id']})")
@@ -128,8 +124,8 @@ def bulk_semantic_search() -> None:
 def autocomplete_example() -> None:
     """Demonstrate autocomplete suggestions.
 
-    ``concepts.suggest`` returns its own response shape (distinct from
-    ``search.basic``); read suggestion fields off each item directly.
+    ``concepts.suggest`` returns a flat list of concept dicts - the same
+    shape as ``search.basic`` - so you read ``concept_name`` directly.
     """
     print("\n=== Autocomplete ===")
 
