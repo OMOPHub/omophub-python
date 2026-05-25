@@ -1,0 +1,22 @@
+src/omophub/resources/fhir.py
+  s_c995e58523efd2::t_e6a9014388e788 407-408,438-439
+tests/unit/resources/test_fhir.py
+  s_c995e58523efd2::t_6a630cf0e82e0f 361-397
+  s_c995e58523efd2::t_f561785b1e14e1 565-604
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "4e020bb93f8245f2658cfbd826c652a715e1d5b0",
+  "prompts": {},
+  "sessions": {
+    "s_c995e58523efd2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98408716-d0fe-4669-a33d-cdf3c6afe981",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
