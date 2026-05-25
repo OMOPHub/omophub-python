@@ -1,0 +1,36 @@
+src/omophub/types/fhir.py
+  s_c995e58523efd2::t_4a1ca57a6dbeed 103
+  s_c995e58523efd2::t_7dc1ca764f47a0 40-44,55-58
+tests/unit/resources/test_fhir.py
+  s_c995e58523efd2::t_a0915b95ead8d1 755-756,763
+  s_c995e58523efd2::t_05188f4e9cf94b 719-721,730,740
+  s_c995e58523efd2::t_2bc58a1fa09b10 243-278
+CHANGELOG.md
+  s_c995e58523efd2::t_cd835b48e01abe 8-18,27
+  s_c995e58523efd2::t_ba65dfff756a54 23-26
+  s_c995e58523efd2::t_b70b8a70e65150 19-22
+src/omophub/resources/fhir.py
+  s_c995e58523efd2::t_c61186627173ba 225-226
+  s_c995e58523efd2::t_d3ed44f7935cf6 165-166
+  s_c995e58523efd2::t_780e721446a587 244,381
+  s_c995e58523efd2::t_dc3173dfb51116 285-286,337-338
+  s_c995e58523efd2::t_85dc7a4a5ecfe7 147
+  s_c995e58523efd2::t_c629e34dab4450 46-50,56,64-66,73-74,76,79-83
+  s_c995e58523efd2::t_8e67ade9705c37 202,256,298,363,393,418
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "6febfc353764f32e70d8f4744461f10378072513",
+  "prompts": {},
+  "sessions": {
+    "s_c995e58523efd2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98408716-d0fe-4669-a33d-cdf3c6afe981",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
