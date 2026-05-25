@@ -490,6 +490,103 @@ def error_handling_examples() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 13. Administrative code via the HL7 FHIR-to-OMOP IG ConceptMap layer
+# ---------------------------------------------------------------------------
+
+
+def resolve_administrative_gender() -> None:
+    """Resolve a FHIR administrative code (gender) via the IG ConceptMap layer.
+
+    Administrative/structural systems (administrative-gender, v3-ActCode
+    encounter class, condition-clinical, ...) have no OMOP vocabulary-table
+    representation and resolve through the IG's ConceptMaps.
+    """
+    print("\n=== 13. Administrative gender (IG ConceptMap) ===")
+
+    client = omophub.OMOPHub()
+    try:
+        result = client.fhir.resolve(
+            system="http://hl7.org/fhir/administrative-gender",
+            code="male",
+            resource_type="Patient",
+        )
+        res = result["resolution"]
+        std = res["standard_concept"]
+        print(f"  male → {std['concept_name']} ({std['concept_id']})")
+        print(f"  target_table: {res['target_table']}")
+        print(f"  via IG ConceptMap: {res.get('concept_map_id')}")
+        # Composite source concepts also surface a `value_as_concept`
+        # (the IG 'Maps to value' / Value-as-Concept pattern) when present.
+        if res.get("value_as_concept"):
+            val = res["value_as_concept"]
+            print(
+                f"  value_as_concept: {val['concept_name']}"
+                f" → {res.get('value_target_field')}"
+            )
+    finally:
+        client.close()
+
+
+# ---------------------------------------------------------------------------
+# 14. CodeableConcept with user_selected (overrides vocabulary preference)
+# ---------------------------------------------------------------------------
+
+
+def resolve_user_selected() -> None:
+    """A coding marked user_selected wins best_match over vocabulary preference."""
+    print("\n=== 14. CodeableConcept with user_selected ===")
+
+    client = omophub.OMOPHub()
+    try:
+        result = client.fhir.resolve_codeable_concept(
+            coding=[
+                # SNOMED would normally win on OHDSI preference, but the
+                # user-selected ICD-10-CM coding takes precedence.
+                {"system": "http://snomed.info/sct", "code": "44054006"},
+                {
+                    "system": "http://hl7.org/fhir/sid/icd-10-cm",
+                    "code": "E11.9",
+                    "user_selected": True,
+                },
+            ],
+            resource_type="Condition",
+        )
+        best = result["best_match"]
+        if best:
+            src = best["resolution"]["source_concept"]
+            print(f"  best_match source vocabulary: {src['vocabulary_id']}")
+    finally:
+        client.close()
+
+
+# ---------------------------------------------------------------------------
+# 15. on_unmapped="sentinel" — a concept_id 0 record instead of a 404
+# ---------------------------------------------------------------------------
+
+
+def resolve_unmapped_sentinel() -> None:
+    """With on_unmapped='sentinel', an unresolvable code yields a row, not a 404.
+
+    Handy for ETL pipelines that need one output row per input. Works on
+    resolve(), resolve_batch(), and resolve_codeable_concept().
+    """
+    print("\n=== 15. on_unmapped='sentinel' ===")
+
+    client = omophub.OMOPHub()
+    try:
+        result = client.fhir.resolve(
+            system="http://snomed.info/sct",
+            code="00000000",
+            on_unmapped="sentinel",
+        )
+        res = result["resolution"]
+        print(f"  mapping_type: {res['mapping_type']}")
+        print(f"  standard concept_id: {res['standard_concept']['concept_id']}")
+    finally:
+        client.close()
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -505,5 +602,8 @@ if __name__ == "__main__":
     resolve_batch()
     resolve_codeable_concept()
     resolve_codeable_concept_text_fallback()
+    resolve_administrative_gender()
+    resolve_user_selected()
+    resolve_unmapped_sentinel()
     asyncio.run(async_resolve())
     error_handling_examples()
