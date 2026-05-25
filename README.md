@@ -102,6 +102,24 @@ result = client.fhir.resolve_codeable_concept(
 print(result["best_match"]["resolution"]["source_concept"]["vocabulary_id"])  # "SNOMED"
 ```
 
+The resolver also follows the [HL7 FHIR-to-OMOP IG](https://hl7.org/fhir/uv/omop/INFORMATIVE1/en/): it resolves FHIR administrative codes via the IG ConceptMaps, decomposes composite concepts (`Maps to value`), honors `Coding.userSelected`, and can return a `concept_id` 0 sentinel instead of a 404.
+
+```python
+# Administrative gender → person.gender_concept_id (via IG ConceptMap)
+client.fhir.resolve(system="http://hl7.org/fhir/administrative-gender", code="male")
+
+# A user-selected coding wins over vocabulary preference
+client.fhir.resolve_codeable_concept(coding=[
+    {"system": "http://snomed.info/sct", "code": "44054006"},
+    {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9", "user_selected": True},
+])
+
+# on_unmapped="sentinel" → a concept_id 0 record instead of a 404 (one row per input for ETL)
+client.fhir.resolve(system="http://snomed.info/sct", code="00000000", on_unmapped="sentinel")
+```
+
+Composite concepts (e.g. "Allergy to penicillin") additionally surface `resolution["value_as_concept"]` (the IG Value-as-Concept pattern). `on_unmapped` is accepted by `resolve()`, `resolve_batch()`, and `resolve_codeable_concept()` on both the sync and async clients.
+
 ### Type Interoperability
 
 The resolver accepts any Coding-like input via duck typing - a plain dict, omophub's lightweight `Coding` TypedDict, or any object with `.system` / `.code` attributes (e.g. `fhir.resources.Coding`, `fhirpy` codings).
