@@ -47,7 +47,11 @@ SNOMED_RESOLVE_RESPONSE = {
             "domain_resource_alignment": "aligned",
         },
     },
-    "meta": {"request_id": "test", "timestamp": "2026-04-10T00:00:00Z", "vocab_release": "2025.2"},
+    "meta": {
+        "request_id": "test",
+        "timestamp": "2026-04-10T00:00:00Z",
+        "vocab_release": "2025.2",
+    },
 }
 
 ICD10_MAPPED_RESPONSE = {
@@ -186,13 +190,17 @@ class TestFhirSync:
             return_value=Response(200, json=semantic_response)
         )
 
-        result = sync_client.fhir.resolve(display="Blood Sugar", resource_type="Observation")
+        result = sync_client.fhir.resolve(
+            display="Blood Sugar", resource_type="Observation"
+        )
 
         assert result["resolution"]["mapping_type"] == "semantic_match"
         assert result["resolution"]["similarity_score"] == 0.91
 
     @respx.mock
-    def test_resolve_with_recommendations(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_with_recommendations(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Recommendations are included when requested."""
         recs_response = {**SNOMED_RESOLVE_RESPONSE}
         recs_response["data"] = {
@@ -232,7 +240,45 @@ class TestFhirSync:
         assert body["recommendations_limit"] == 3
 
     @respx.mock
-    def test_resolve_unknown_system_400(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_on_unmapped_passthrough(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is forwarded to the request body when set."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
+        )
+
+        sync_client.fhir.resolve(
+            system="http://snomed.info/sct",
+            code="44054006",
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    def test_resolve_omits_on_unmapped_by_default(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is omitted from the body when not provided."""
+        route = respx.post(f"{base_url}/fhir/resolve").mock(
+            return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
+        )
+
+        sync_client.fhir.resolve(system="http://snomed.info/sct", code="44054006")
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert "on_unmapped" not in body
+
+    @respx.mock
+    def test_resolve_unknown_system_400(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Unknown URI raises an API error."""
         respx.post(f"{base_url}/fhir/resolve").mock(
             return_value=Response(
@@ -268,7 +314,9 @@ class TestFhirSync:
         )
 
         with pytest.raises(Exception):
-            sync_client.fhir.resolve(system="http://www.ama-assn.org/go/cpt", code="99213")
+            sync_client.fhir.resolve(
+                system="http://www.ama-assn.org/go/cpt", code="99213"
+            )
 
     @respx.mock
     def test_resolve_batch(self, sync_client: OMOPHub, base_url: str) -> None:
@@ -286,7 +334,9 @@ class TestFhirSync:
         assert len(result["results"]) == 1
 
     @respx.mock
-    def test_resolve_codeable_concept(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_codeable_concept(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """CodeableConcept resolution returns best_match and alternatives."""
         respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
             return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
@@ -301,11 +351,54 @@ class TestFhirSync:
         )
 
         assert result["best_match"] is not None
-        assert result["best_match"]["resolution"]["source_concept"]["vocabulary_id"] == "SNOMED"
+        assert (
+            result["best_match"]["resolution"]["source_concept"]["vocabulary_id"]
+            == "SNOMED"
+        )
         assert len(result["alternatives"]) == 1
 
     @respx.mock
-    def test_resolve_batch_with_all_options(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_batch_forwards_on_unmapped(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is forwarded in the batch request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        sync_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    def test_resolve_codeable_concept_forwards_on_unmapped(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is forwarded in the codeable-concept request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        sync_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    def test_resolve_batch_with_all_options(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Batch passes resource_type, include_recommendations, and include_quality."""
         route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
             return_value=Response(200, json=BATCH_RESPONSE)
@@ -354,7 +447,9 @@ class TestFhirSync:
         assert body["include_quality"] is True
 
     @respx.mock
-    def test_resolve_codeable_concept_minimal(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_codeable_concept_minimal(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """CodeableConcept with no optional flags (covers False branches)."""
         route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
             return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
@@ -373,7 +468,9 @@ class TestFhirSync:
         assert "include_quality" not in body
 
     @respx.mock
-    def test_resolve_sends_correct_body(self, sync_client: OMOPHub, base_url: str) -> None:
+    def test_resolve_sends_correct_body(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
         """Verify the POST body includes only non-None parameters."""
         route = respx.post(f"{base_url}/fhir/resolve").mock(
             return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
@@ -406,7 +503,9 @@ class TestFhirAsync:
 
     @respx.mock
     @pytest.mark.anyio
-    async def test_async_resolve(self, async_client: AsyncOMOPHub, base_url: str) -> None:
+    async def test_async_resolve(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
         """Async resolve returns the same shape as sync."""
         respx.post(f"{base_url}/fhir/resolve").mock(
             return_value=Response(200, json=SNOMED_RESOLVE_RESPONSE)
@@ -422,7 +521,9 @@ class TestFhirAsync:
 
     @respx.mock
     @pytest.mark.anyio
-    async def test_async_resolve_batch(self, async_client: AsyncOMOPHub, base_url: str) -> None:
+    async def test_async_resolve_batch(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
         """Async batch resolve returns results and summary."""
         respx.post(f"{base_url}/fhir/resolve/batch").mock(
             return_value=Response(200, json=BATCH_RESPONSE)
@@ -458,6 +559,46 @@ class TestFhirAsync:
         )
 
         assert result["best_match"] is not None
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_batch_forwards_on_unmapped(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async batch resolve forwards on_unmapped in the request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_codeable_concept_forwards_on_unmapped(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async codeable concept resolve forwards on_unmapped."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
 
     @respx.mock
     @pytest.mark.anyio
@@ -513,12 +654,13 @@ class TestFhirAsync:
 
     @respx.mock
     @pytest.mark.anyio
-    async def test_async_fhir_property_cached(self, async_client: AsyncOMOPHub, base_url: str) -> None:
+    async def test_async_fhir_property_cached(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
         """Accessing client.fhir twice returns the same cached instance."""
         fhir1 = async_client.fhir
         fhir2 = async_client.fhir
         assert fhir1 is fhir2
-
 
     @respx.mock
     @pytest.mark.anyio
@@ -652,8 +794,9 @@ class TestExtractCodingHelper:
     def test_coding_to_dict_filters_unknown_keys_from_dict(self) -> None:
         """Dict inputs with FHIR metadata keys must be filtered to the
         resolver's allowed key set - the server should never see
-        ``userSelected``, ``extension``, or version markers from
-        ``fhir.resources.Coding.model_dump()``.
+        ``extension`` or version markers from
+        ``fhir.resources.Coding.model_dump()``. FHIR's camelCase
+        ``userSelected`` is mapped to the API's ``user_selected``.
         """
         from omophub.resources.fhir import _ALLOWED_CODING_KEYS, _coding_to_dict
 
@@ -662,7 +805,7 @@ class TestExtractCodingHelper:
             "code": "44054006",
             "display": "Type 2 diabetes mellitus",
             "version": "20240301",  # Not in allowed keys
-            "userSelected": True,  # FHIR extension
+            "userSelected": True,  # FHIR camelCase -> user_selected
             "extension": [{"url": "http://example.com"}],
             "id": "coding-1",
         }
@@ -672,6 +815,7 @@ class TestExtractCodingHelper:
             "system": "http://snomed.info/sct",
             "code": "44054006",
             "display": "Type 2 diabetes mellitus",
+            "user_selected": True,
         }
 
     def test_coding_to_dict_filters_unknown_attrs_from_object(self) -> None:
@@ -686,14 +830,15 @@ class TestExtractCodingHelper:
             system="http://snomed.info/sct",
             code="44054006",
             display=None,
-            userSelected=True,  # Should not leak into payload
-            extension="anything",
+            userSelected=True,  # FHIR camelCase -> user_selected
+            extension="anything",  # Should not leak into payload
         )
         payload = _coding_to_dict(obj)
         assert set(payload.keys()) <= set(_ALLOWED_CODING_KEYS)
         assert payload == {
             "system": "http://snomed.info/sct",
             "code": "44054006",
+            "user_selected": True,
         }
 
 

@@ -37,6 +37,11 @@ class FhirResolution(TypedDict):
     vocabulary_id: str | None
     source_concept: ResolvedConcept
     standard_concept: ResolvedConcept
+    # Value concept for composite source concepts decomposed via the
+    # ``Maps to value`` relationship (HL7 FHIR-to-OMOP IG Value-as-Concept
+    # pattern). Present only when the source has a ``Maps to value`` target.
+    value_as_concept: NotRequired[ResolvedConcept]
+    value_target_field: NotRequired[str]
     mapping_type: str
     target_table: str | None
     domain_resource_alignment: str
@@ -47,6 +52,10 @@ class FhirResolution(TypedDict):
     quality_note: NotRequired[str]
     alternative_standard_concepts: NotRequired[list[ResolvedConcept]]
     recommendations: NotRequired[list[RecommendedConceptOutput]]
+    # Set when a FHIR administrative code resolved via an IG ConceptMap
+    # (e.g. ``GenderClass``); ``mapping_note`` carries any advisory.
+    concept_map_id: NotRequired[str]
+    mapping_note: NotRequired[str]
 
 
 class FhirResolveResult(TypedDict):
@@ -91,6 +100,7 @@ class Coding(TypedDict, total=False):
     code: str
     display: str
     version: str
+    user_selected: bool
 
 
 class CodeableConcept(TypedDict, total=False):
