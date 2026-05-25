@@ -1,0 +1,27 @@
+CHANGELOG.md
+  h_70ae365dc0c3d1 8
+examples/fhir_resolver.py
+  s_c995e58523efd2::t_1f31319fe26930 493-588
+  s_c995e58523efd2::t_a1357145032d8d 605-607
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "7e278547150ab9bcf2c0045a049edf7b47af47ca",
+  "prompts": {},
+  "humans": {
+    "h_70ae365dc0c3d1": {
+      "author": "alex-omophub <sdk@omophub.com>"
+    }
+  },
+  "sessions": {
+    "s_c995e58523efd2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98408716-d0fe-4669-a33d-cdf3c6afe981",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
