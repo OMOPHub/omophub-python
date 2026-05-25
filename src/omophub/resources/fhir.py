@@ -43,14 +43,17 @@ def _extract_coding(
 
 
 # Keys the FHIR Concept Resolver accepts on a single coding item. Any
-# other keys in a dict input (e.g. ``userSelected``, ``extension``,
-# ``version`` from ``fhir.resources.Coding.model_dump()``) are dropped
-# so the server never sees FHIR metadata it does not understand.
+# other keys in a dict input (e.g. ``extension``, ``version`` from
+# ``fhir.resources.Coding.model_dump()``) are dropped so the server never
+# sees FHIR metadata it does not understand. FHIR's camelCase
+# ``userSelected`` is mapped to the API's snake_case ``user_selected`` in
+# :func:`_coding_to_dict`.
 _ALLOWED_CODING_KEYS: tuple[str, ...] = (
     "system",
     "code",
     "display",
     "vocabulary_id",
+    "user_selected",
 )
 
 
@@ -58,15 +61,26 @@ def _coding_to_dict(coding_input: object) -> dict[str, Any]:
     """Convert any Coding-like input to a wire-format dict.
 
     Preserves only the keys the resolver endpoint understands
-    (:data:`_ALLOWED_CODING_KEYS`). Skips keys whose values are ``None``
-    so the request payload stays tight.
+    (:data:`_ALLOWED_CODING_KEYS`). FHIR's camelCase ``userSelected`` is
+    accepted and mapped to ``user_selected``. Skips keys whose values are
+    ``None`` so the request payload stays tight.
     """
     if isinstance(coding_input, dict):
         src: dict[str, Any] = {
             key: coding_input.get(key) for key in _ALLOWED_CODING_KEYS
         }
+        if (
+            src.get("user_selected") is None
+            and coding_input.get("userSelected") is not None
+        ):
+            src["user_selected"] = coding_input.get("userSelected")
     else:
         src = {key: getattr(coding_input, key, None) for key in _ALLOWED_CODING_KEYS}
+        if (
+            src.get("user_selected") is None
+            and getattr(coding_input, "userSelected", None) is not None
+        ):
+            src["user_selected"] = getattr(coding_input, "userSelected", None)
     return {k: v for k, v in src.items() if v is not None}
 
 
@@ -130,6 +144,7 @@ def _build_resolve_body(
     include_recommendations: bool = False,
     recommendations_limit: int = 5,
     include_quality: bool = False,
+    on_unmapped: str | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {}
     if system is not None:
@@ -147,6 +162,8 @@ def _build_resolve_body(
         body["recommendations_limit"] = recommendations_limit
     if include_quality:
         body["include_quality"] = True
+    if on_unmapped is not None:
+        body["on_unmapped"] = on_unmapped
     return body
 
 
@@ -182,6 +199,7 @@ class Fhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirResolveResult:
         """Resolve a single FHIR Coding to an OMOP standard concept.
 
@@ -204,6 +222,8 @@ class Fhir:
             include_recommendations: Include Phoebe recommendations
             recommendations_limit: Max recommendations to return (1-20)
             include_quality: Include mapping quality signal
+            on_unmapped: ``"error"`` (default) raises 404 when nothing
+                resolves; ``"sentinel"`` returns a ``concept_id`` 0 record
 
         Returns:
             Resolution result with source concept, standard concept,
@@ -221,6 +241,7 @@ class Fhir:
             include_recommendations=include_recommendations,
             recommendations_limit=recommendations_limit,
             include_quality=include_quality,
+            on_unmapped=on_unmapped,
         )
         return self._request.post("/fhir/resolve", json_data=body)
 
@@ -232,6 +253,7 @@ class Fhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirBatchResult:
         """Batch-resolve up to 100 FHIR Codings.
 
@@ -260,6 +282,8 @@ class Fhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return self._request.post("/fhir/resolve/batch", json_data=body)
 
     def resolve_codeable_concept(
@@ -271,6 +295,7 @@ class Fhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirCodeableConceptResult:
         """Resolve a FHIR CodeableConcept with vocabulary preference.
 
@@ -309,6 +334,8 @@ class Fhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return self._request.post("/fhir/resolve/codeable-concept", json_data=body)
 
 
@@ -333,6 +360,7 @@ class AsyncFhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirResolveResult:
         """Resolve a single FHIR Coding to an OMOP standard concept.
 
@@ -350,6 +378,7 @@ class AsyncFhir:
             include_recommendations=include_recommendations,
             recommendations_limit=recommendations_limit,
             include_quality=include_quality,
+            on_unmapped=on_unmapped,
         )
         return await self._request.post("/fhir/resolve", json_data=body)
 
@@ -361,6 +390,7 @@ class AsyncFhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirBatchResult:
         """Batch-resolve up to 100 FHIR Codings.
 
@@ -374,6 +404,8 @@ class AsyncFhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return await self._request.post("/fhir/resolve/batch", json_data=body)
 
     async def resolve_codeable_concept(
@@ -385,6 +417,7 @@ class AsyncFhir:
         include_recommendations: bool = False,
         recommendations_limit: int = 5,
         include_quality: bool = False,
+        on_unmapped: str | None = None,
     ) -> FhirCodeableConceptResult:
         """Resolve a FHIR CodeableConcept with vocabulary preference.
 
@@ -402,6 +435,8 @@ class AsyncFhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return await self._request.post(
             "/fhir/resolve/codeable-concept", json_data=body
         )

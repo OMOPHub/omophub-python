@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-05-25
+
+### Added
+
+- `FhirResolution` now types the `value_as_concept` and `value_target_field`
+  fields the resolver returns when a composite concept is decomposed via the
+  `Maps to value` relationship (HL7 FHIR-to-OMOP IG Value-as-Concept pattern —
+  e.g. "Allergy to penicillin" → standard "Allergy to drug" + value
+  "Penicillin G"), plus `concept_map_id` / `mapping_note` for FHIR
+  administrative-code resolutions. These were already passed through; they are
+  now part of the typed response shape.
+- `resolve()`, `resolve_batch()`, and `resolve_codeable_concept()` accept an
+  `on_unmapped` argument (`"error"` default / `"sentinel"`). With `"sentinel"`
+  the resolver returns a `concept_id` 0 record instead of a 404 when nothing
+  resolves, so ETL callers always get a writable row.
+- Coding inputs now carry `user_selected` through to the resolver, and FHIR's
+  camelCase `userSelected` is mapped to it. A user-selected coding wins over
+  vocabulary preference in `resolve_codeable_concept()` (FHIR-to-OMOP IG
+  CodeableConcept pattern).
+
 ## [1.7.1] - 2026-05-20
 
 Maintenance release. Dependency and lock-file updates only — there are no
