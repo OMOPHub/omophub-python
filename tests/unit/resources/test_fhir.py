@@ -358,6 +358,44 @@ class TestFhirSync:
         assert len(result["alternatives"]) == 1
 
     @respx.mock
+    def test_resolve_batch_forwards_on_unmapped(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is forwarded in the batch request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        sync_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    def test_resolve_codeable_concept_forwards_on_unmapped(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """on_unmapped is forwarded in the codeable-concept request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        sync_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
     def test_resolve_batch_with_all_options(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
@@ -521,6 +559,46 @@ class TestFhirAsync:
         )
 
         assert result["best_match"] is not None
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_batch_forwards_on_unmapped(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async batch resolve forwards on_unmapped in the request body."""
+        route = respx.post(f"{base_url}/fhir/resolve/batch").mock(
+            return_value=Response(200, json=BATCH_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_batch(
+            [{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
+
+    @respx.mock
+    @pytest.mark.anyio
+    async def test_async_resolve_codeable_concept_forwards_on_unmapped(
+        self, async_client: AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async codeable concept resolve forwards on_unmapped."""
+        route = respx.post(f"{base_url}/fhir/resolve/codeable-concept").mock(
+            return_value=Response(200, json=CODEABLE_CONCEPT_RESPONSE)
+        )
+
+        await async_client.fhir.resolve_codeable_concept(
+            coding=[{"system": "http://snomed.info/sct", "code": "44054006"}],
+            on_unmapped="sentinel",
+        )
+
+        import json
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["on_unmapped"] == "sentinel"
 
     @respx.mock
     @pytest.mark.anyio

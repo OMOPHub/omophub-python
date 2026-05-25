@@ -404,6 +404,8 @@ class AsyncFhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return await self._request.post("/fhir/resolve/batch", json_data=body)
 
     async def resolve_codeable_concept(
@@ -433,6 +435,8 @@ class AsyncFhir:
             body["recommendations_limit"] = recommendations_limit
         if include_quality:
             body["include_quality"] = True
+        if on_unmapped is not None:
+            body["on_unmapped"] = on_unmapped
         return await self._request.post(
             "/fhir/resolve/codeable-concept", json_data=body
         )
