@@ -1,0 +1,21 @@
+.github/workflows/publish.yml
+  s_c995e58523efd2::t_e1c67d7abd6c2f 42
+  s_c995e58523efd2::t_cc1b686298e8af 27
+  s_c995e58523efd2::t_65318e6eb9908b 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "6616a0995deb2c41b9b3397ceadc4a1d162cb647",
+  "prompts": {},
+  "sessions": {
+    "s_c995e58523efd2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98408716-d0fe-4669-a33d-cdf3c6afe981",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
