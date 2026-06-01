@@ -1,0 +1,29 @@
+tests/unit/resources/test_search.py
+  s_b724aff89835a7::t_6c104fc8b1c891 302,319,356,388,405,558,571,594,632,677,699,735
+src/omophub/resources/search.py
+  s_b724aff89835a7::t_97da22565ca0e1 325,372,659,694
+CHANGELOG.md
+  h_70ae365dc0c3d1 17
+  s_b724aff89835a7::t_5858a23f0b0b91 8-16,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d5cb8145509a763713dab7f8da2e80927ec15145",
+  "prompts": {},
+  "humans": {
+    "h_70ae365dc0c3d1": {
+      "author": "alex-omophub <sdk@omophub.com>"
+    }
+  },
+  "sessions": {
+    "s_b724aff89835a7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abbaee52-99b6-404f-b925-4f46c3915990",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
