@@ -299,7 +299,7 @@ class TestSemanticSearch:
             },
             "meta": {"pagination": {"page": 1, "has_next": False, "total_items": 1}},
         }
-        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+        route = respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -316,7 +316,7 @@ class TestSemanticSearch:
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """Test semantic search with all filters."""
-        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+        route = respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json={"success": True, "data": {"results": []}})
         )
 
@@ -353,7 +353,7 @@ class TestSemanticSearch:
             ],
             "meta": {"pagination": {"page": 1, "has_next": False}},
         }
-        respx.get(f"{base_url}/concepts/semantic-search").mock(
+        respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -385,7 +385,7 @@ class TestSemanticSearch:
                 return Response(200, json=page1_response)
             return Response(200, json=page2_response)
 
-        respx.get(f"{base_url}/concepts/semantic-search").mock(side_effect=mock_response)
+        respx.get(f"{base_url}/search/semantic").mock(side_effect=mock_response)
 
         results = list(sync_client.search.semantic_iter("diabetes", page_size=1))
         assert len(results) == 2
@@ -402,7 +402,7 @@ class TestSemanticSearch:
             "data": [],
             "meta": {"pagination": {"page": 1, "has_next": False}},
         }
-        respx.get(f"{base_url}/concepts/semantic-search").mock(
+        respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -555,7 +555,7 @@ class TestAsyncSemanticSearch:
                 "results": [{"concept_id": 4329847, "similarity_score": 0.95}],
             },
         }
-        respx.get(f"{base_url}/concepts/semantic-search").mock(
+        respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -568,7 +568,7 @@ class TestAsyncSemanticSearch:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async semantic search with filters."""
-        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+        route = respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json={"success": True, "data": {"results": []}})
         )
 
@@ -591,7 +591,7 @@ class TestAsyncSemanticSearch:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async semantic search with all available filters."""
-        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+        route = respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json={"success": True, "data": {"results": []}})
         )
 
@@ -629,7 +629,7 @@ class TestAsyncSemanticSearch:
             ],
             "meta": {"pagination": {"page": 1, "has_next": False}},
         }
-        respx.get(f"{base_url}/concepts/semantic-search").mock(
+        respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -674,7 +674,7 @@ class TestAsyncSemanticSearch:
                 return Response(200, json=page2_response)
             return Response(200, json=page3_response)
 
-        respx.get(f"{base_url}/concepts/semantic-search").mock(side_effect=mock_response)
+        respx.get(f"{base_url}/search/semantic").mock(side_effect=mock_response)
 
         results = []
         async for item in async_client.search.semantic_iter("diabetes", page_size=1):
@@ -696,7 +696,7 @@ class TestAsyncSemanticSearch:
             "data": [{"concept_id": 1, "similarity_score": 0.9}],
             "meta": {"pagination": {"page": 1, "has_next": False}},
         }
-        route = respx.get(f"{base_url}/concepts/semantic-search").mock(
+        route = respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 
@@ -732,7 +732,7 @@ class TestAsyncSemanticSearch:
             "data": [],
             "meta": {"pagination": {"page": 1, "has_next": False}},
         }
-        respx.get(f"{base_url}/concepts/semantic-search").mock(
+        respx.get(f"{base_url}/search/semantic").mock(
             return_value=Response(200, json=semantic_response)
         )
 

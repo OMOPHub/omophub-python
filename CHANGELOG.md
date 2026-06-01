@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-06-01
+
+### Changed
+
+- `Search.semantic()`, `Search.semantic_iter()`, `AsyncSearch.semantic()`, and
+  `AsyncSearch.semantic_iter()` now call the canonical path
+  `GET /v1/search/semantic` instead of `GET /v1/concepts/semantic-search`. The
+  legacy path remains a permanent server-side alias (emits `Deprecation: true`
+  + `Link: …rel="successor-version"` headers), so older installations of this
+  SDK continue to work - no breaking change for callers.
+
 ## [1.8.0] - 2026-05-25
 
 ### Added

@@ -322,7 +322,7 @@ class Search:
         if threshold is not None:
             params["threshold"] = threshold
 
-        return self._request.get("/concepts/semantic-search", params=params)
+        return self._request.get("/search/semantic", params=params)
 
     def semantic_iter(
         self,
@@ -369,7 +369,7 @@ class Search:
             if threshold is not None:
                 params["threshold"] = threshold
 
-            result = self._request.get_raw("/concepts/semantic-search", params=params)
+            result = self._request.get_raw("/search/semantic", params=params)
 
             data = result.get("data", [])
             results = data.get("results", data) if isinstance(data, dict) else data
@@ -656,7 +656,7 @@ class AsyncSearch:
         if threshold is not None:
             params["threshold"] = threshold
 
-        return await self._request.get("/concepts/semantic-search", params=params)
+        return await self._request.get("/search/semantic", params=params)
 
     async def semantic_iter(
         self,
@@ -691,7 +691,7 @@ class AsyncSearch:
                 params["threshold"] = threshold
 
             result = await self._request.get_raw(
-                "/concepts/semantic-search", params=params
+                "/search/semantic", params=params
             )
 
             data = result.get("data", [])
