@@ -690,9 +690,7 @@ class AsyncSearch:
             if threshold is not None:
                 params["threshold"] = threshold
 
-            result = await self._request.get_raw(
-                "/search/semantic", params=params
-            )
+            result = await self._request.get_raw("/search/semantic", params=params)
 
             data = result.get("data", [])
             results = data.get("results", data) if isinstance(data, dict) else data
