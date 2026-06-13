@@ -1,0 +1,19 @@
+CHANGELOG.md
+  s_7c486937eee132::t_078252b9410bf3 278-280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "46b92eb909a1fd2cbc337271cd26f93e4719dd7a",
+  "prompts": {},
+  "sessions": {
+    "s_7c486937eee132": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8fece13b-c11c-4290-b39e-35f5b9119909",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
