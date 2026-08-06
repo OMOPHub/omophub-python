@@ -1,0 +1,19 @@
+uv.lock
+  s_eabd0733161af8::t_f44ce1fdfdcb94 16,29,31-148,446
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "22e61159e544ccab5f6c7c7759c175f4a48913a7",
+  "prompts": {},
+  "sessions": {
+    "s_eabd0733161af8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8a1465a6-abe4-4879-8a7f-dd667b790313",
+        "model": "default"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
