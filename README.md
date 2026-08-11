@@ -55,8 +55,11 @@ results = client.search.basic("metformin", vocabulary_ids=["RxNorm"], domain_ids
 for c in results["concepts"]:
     print(f"{c['concept_id']}: {c['concept_name']}")
 
-# Map ICD-10 code to SNOMED
-mappings = client.mappings.get_by_code("ICD10CM", "E11.9", target_vocabulary="SNOMED")
+# Map an ICD-10 code to SNOMED: look the code up, then map its concept.
+# (`Maps to` points at *standard* concepts, so SNOMED is a valid target here
+# while the reverse, SNOMED -> ICD10CM, would return nothing.)
+icd = client.concepts.get_by_code("ICD10CM", "E11.9")
+mappings = client.mappings.get(icd["concept_id"], target_vocabulary="SNOMED")
 
 # Navigate concept hierarchy
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
@@ -323,7 +326,7 @@ suggestions = client.concepts.suggest("diab", vocabulary_ids=["SNOMED"], page_si
 | `concepts` | Concept lookup and batch operations | `get()`, `get_by_code()`, `batch()`, `suggest()` |
 | `search` | Full-text and semantic search | `basic()`, `advanced()`, `semantic()`, `similar()`, `bulk_basic()`, `bulk_semantic()` |
 | `hierarchy` | Navigate concept relationships | `ancestors()`, `descendants()` |
-| `mappings` | Cross-vocabulary mappings | `get()`, `map()` |
+| `mappings` | Cross-vocabulary mappings | `get()`, `get_iter()`, `map()` |
 | `vocabularies` | Vocabulary metadata | `list()`, `get()`, `stats()` |
 | `domains` | Domain information | `list()`, `get()`, `concepts()` |
 | `fhir` | FHIR-to-OMOP resolution | `resolve()`, `resolve_batch()`, `resolve_codeable_concept()` |

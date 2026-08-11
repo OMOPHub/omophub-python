@@ -5,34 +5,166 @@ import omophub
 
 
 def get_mappings() -> None:
-    """Get mappings for a concept to other vocabularies."""
+    """Get the mappings defined for a concept."""
     print("=== Concept Mappings ===")
 
     client = omophub.OMOPHub()
 
     try:
-        # Type 2 diabetes mellitus (SNOMED)
+        # Type 2 diabetes mellitus (SNOMED, standard)
         concept_id = 201826
 
-        result = client.mappings.get(
-            concept_id,
-            target_vocabulary="ICD10CM",
+        # `get()` returns ONE page, and it returns the response's `data` field
+        # only -- the `meta.pagination` that would say whether more pages exist
+        # is not part of what you get back. See get_every_mapping() below.
+        result = client.mappings.get(concept_id)
+        mappings = result.get("mappings", [])
+
+        print(f"Mappings for concept {concept_id} (this page: {len(mappings)}):")
+        for m in mappings[:10]:
+            # `Mapping` types vocabulary_id / concept_code as NotRequired
+            # because it is shared with `mappings.map()`, which does populate
+            # them. THIS endpoint does not: it projects each row down to
+            # source/target id + name, relationship_id and confidence. Resolve
+            # a code with `concepts.get(target_concept_id)` -- see
+            # map_to_a_specific_vocabulary() below.
+            print(
+                f"  {m.get('relationship_id')}: "
+                f"{m.get('target_concept_id')} {m.get('target_concept_name')}"
+            )
+    except omophub.OMOPHubError as e:
+        print(f"API error: {e.message}")
+    finally:
+        client.close()
+
+
+def map_to_a_specific_vocabulary() -> None:
+    """Find which ICD-10-CM codes correspond to a SNOMED concept.
+
+    Note the DIRECTION. `Maps to` always points at a *standard* concept, and
+    ICD-10-CM is non-standard, so `target_vocabulary="ICD10CM"` on the default
+    relationship matches nothing -- it returns an empty list rather than an
+    error. The codes that roll up INTO a standard concept are reached with
+    `Mapped from`.
+    """
+    print("\n=== Mapping to a Specific Vocabulary ===")
+
+    client = omophub.OMOPHub()
+
+    try:
+        concept_id = 201826
+
+        empty = client.mappings.get(concept_id, target_vocabulary="ICD10CM")
+        print(
+            f"  'Maps to' + ICD10CM:    {len(empty.get('mappings', []))} rows (as expected)"
         )
 
-        source = result.get("source_concept", {})
-        mappings = result.get("mappings", [])
-        summary = result.get("mapping_summary", {})
+        icd_codes = list(
+            client.mappings.get_iter(
+                concept_id,
+                relationship_ids=["Mapped from"],
+                target_vocabulary="ICD10CM",
+            )
+        )
+        print(f"  'Mapped from' + ICD10CM: {len(icd_codes)} rows")
 
-        source_name = source.get("concept_name", "Unknown") if source else "Unknown"
-        print(f"Mappings for '{source_name}':")
-        print(f"  Total mappings: {summary.get('total_mappings', len(mappings))}")
+        # The mapping row has the target's id and name but not its code, so
+        # resolve the first few. One request each -- fine for five rows, not
+        # for the full 74.
+        for m in icd_codes[:5]:
+            target_id = m.get("target_concept_id")
+            if target_id is None:
+                continue
+            target = client.concepts.get(target_id)
+            print(
+                f"    <- [{target.get('vocabulary_id', '?')}] "
+                f"{target.get('concept_code', '?')} {target.get('concept_name', '?')}"
+            )
+    except omophub.OMOPHubError as e:
+        print(f"API error: {e.message}")
+    finally:
+        client.close()
 
-        for m in mappings[:10]:
-            target_vocab = m.get("target_vocabulary_id", "?")
-            target_code = m.get("target_concept_code", "?")
-            target_name = m.get("target_concept_name", "?")
-            print(f"\n  [{target_vocab}] {target_code}")
-            print(f"    Name: {target_name}")
+
+def get_every_mapping() -> None:
+    """Walk every page instead of trusting the first one.
+
+    This is the one to copy when building a code list: a partial code list is
+    wrong in a way nothing in the result reveals.
+    """
+    print("\n=== Every Mapping (all pages) ===")
+
+    client = omophub.OMOPHub()
+
+    try:
+        concept_id = 201826
+
+        # get_iter() follows has_next to the end; it never has to guess from
+        # the page length. It yields one mapping at a time, so you can consume
+        # the whole set without holding it -- count here, but this is where a
+        # real code list would accumulate what it needs.
+        #
+        # `list(client.mappings.get_iter(...))` materialises the same walk if
+        # you do want them all at once; do not do both, it is two round trips
+        # over every page.
+        total = 0
+        for m in client.mappings.get_iter(concept_id):
+            _ = m.get("target_concept_name")
+            total += 1
+        print(f"  {total} mappings in total")
+    except omophub.OMOPHubError as e:
+        print(f"API error: {e.message}")
+    finally:
+        client.close()
+
+
+def value_as_concept() -> None:
+    """Composite concepts decompose across TWO relationships.
+
+    The default returns only the first, so you learn the patient is allergic
+    to *a drug* but not *which* drug.
+    """
+    print("\n=== Value-as-Concept ===")
+
+    client = omophub.OMOPHub()
+
+    try:
+        # Allergy to penicillin G
+        result = client.mappings.get(
+            4167462,
+            relationship_ids=["Maps to", "Maps to value"],
+        )
+
+        for m in result.get("mappings", []):
+            # `Maps to` -> the OMOP concept column;
+            # `Maps to value` -> value_as_concept_id.
+            column = (
+                "value_as_concept_id"
+                if m.get("relationship_id") == "Maps to value"
+                else "concept_id"
+            )
+            print(
+                f"  {m.get('relationship_id')}: {m.get('target_concept_name')} -> {column}"
+            )
+    except omophub.OMOPHubError as e:
+        print(f"API error: {e.message}")
+    finally:
+        client.close()
+
+
+def exclude_invalid() -> None:
+    """Deprecated mappings come back by default; pass False to drop them."""
+    print("\n=== Valid Mappings Only ===")
+
+    client = omophub.OMOPHub()
+
+    try:
+        concept_id = 201826
+        with_invalid = list(client.mappings.get_iter(concept_id))
+        valid_only = list(client.mappings.get_iter(concept_id, include_invalid=False))
+
+        print(f"  default (includes deprecated): {len(with_invalid)}")
+        print(f"  include_invalid=False:         {len(valid_only)}")
     except omophub.OMOPHubError as e:
         print(f"API error: {e.message}")
     finally:
@@ -99,5 +231,9 @@ def lookup_by_code() -> None:
 
 if __name__ == "__main__":
     get_mappings()
+    map_to_a_specific_vocabulary()
+    get_every_mapping()
+    value_as_concept()
+    exclude_invalid()
     map_concepts()
     lookup_by_code()
