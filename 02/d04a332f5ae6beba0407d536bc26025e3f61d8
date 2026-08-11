@@ -1,0 +1,21 @@
+examples/map_between_vocabularies.py
+  s_675010497a6bc7::t_32e23c4f468408 25-30,70-73,75-82,103-110,112-114
+src/omophub/types/mapping.py
+  s_675010497a6bc7::t_2da0315fb420a4 34-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "02d04a332f5ae6beba0407d536bc26025e3f61d8",
+  "prompts": {},
+  "sessions": {
+    "s_675010497a6bc7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac8e644b-8ae2-49d5-94a0-66989382a45d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
