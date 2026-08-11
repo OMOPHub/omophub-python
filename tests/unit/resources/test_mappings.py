@@ -60,6 +60,58 @@ class TestMappingsResource:
         assert "include_invalid=true" in url_str
 
     @respx.mock
+    def test_get_mappings_include_invalid_is_tri_state(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """False must reach the wire, not be dropped as falsy.
+
+        This endpoint defaults to *including* deprecated mappings, so omitting
+        the parameter and sending ``false`` mean different things. Sending
+        nothing for ``include_invalid=False`` silently returned the rows the
+        caller asked to exclude.
+        """
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
+        )
+
+        sync_client.mappings.get(201826)
+        assert "include_invalid" not in str(route.calls[0].request.url)
+
+        sync_client.mappings.get(201826, include_invalid=False)
+        assert "include_invalid=false" in str(route.calls[1].request.url)
+
+        sync_client.mappings.get(201826, include_invalid=True)
+        assert "include_invalid=true" in str(route.calls[2].request.url)
+
+    @respx.mock
+    def test_get_iter_forwards_include_invalid_false(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """The same tri-state has to survive the pagination helper."""
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": []},
+                    "meta": {
+                        "pagination": {
+                            "page": 1,
+                            "page_size": 100,
+                            "total_items": 0,
+                            "total_pages": 0,
+                            "has_next": False,
+                            "has_previous": False,
+                        }
+                    },
+                },
+            )
+        )
+
+        list(sync_client.mappings.get_iter(201826, include_invalid=False))
+        assert "include_invalid=false" in str(route.calls[0].request.url)
+
+    @respx.mock
     def test_get_mappings_sends_pagination(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:

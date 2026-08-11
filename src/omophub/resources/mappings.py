@@ -24,7 +24,7 @@ class Mappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
-        include_invalid: bool = False,
+        include_invalid: bool | None = None,
         page: int = 1,
         page_size: int = 100,
         vocab_release: str | None = None,
@@ -40,7 +40,11 @@ class Mappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
-            include_invalid: Include invalid/deprecated mappings
+            include_invalid: Whether to return mappings whose relationship or
+                target concept is deprecated. Omit to take the server default,
+                which for this endpoint is to **include** them; pass ``False``
+                to exclude them. The source concept is never filtered, so a
+                deprecated concept still returns what it maps to.
             page: Page number, 1-based (default 1)
             page_size: Mappings per page (default 100). The server clamps this to
                 200 on this endpoint and does not report having done so, so a
@@ -48,13 +52,15 @@ class Mappings:
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mappings for the concept, with pagination detail in ``meta.pagination``
+            The response ``data`` field only. ``meta.pagination`` is **not**
+            part of it, so nothing in this return value tells you whether the
+            mappings were truncated -- use :meth:`get_iter` when that matters.
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
-        if include_invalid:
-            params["include_invalid"] = "true"
+        if include_invalid is not None:
+            params["include_invalid"] = "true" if include_invalid else "false"
         if vocab_release:
             params["vocab_release"] = vocab_release
 
@@ -67,7 +73,7 @@ class Mappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
-        include_invalid: bool = False,
+        include_invalid: bool | None = None,
         page_size: int = 100,
         vocab_release: str | None = None,
     ) -> Iterator[dict[str, Any]]:
@@ -80,7 +86,11 @@ class Mappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
-            include_invalid: Include invalid/deprecated mappings
+            include_invalid: Whether to return mappings whose relationship or
+                target concept is deprecated. Omit to take the server default,
+                which for this endpoint is to **include** them; pass ``False``
+                to exclude them. The source concept is never filtered, so a
+                deprecated concept still returns what it maps to.
             page_size: Mappings fetched per request (default 100, server max 200)
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
@@ -94,8 +104,8 @@ class Mappings:
             params: dict[str, Any] = {"page": page, "page_size": size}
             if target_vocabulary:
                 params["target_vocabulary"] = target_vocabulary
-            if include_invalid:
-                params["include_invalid"] = "true"
+            if include_invalid is not None:
+                params["include_invalid"] = "true" if include_invalid else "false"
             if vocab_release:
                 params["vocab_release"] = vocab_release
 
@@ -182,7 +192,7 @@ class AsyncMappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
-        include_invalid: bool = False,
+        include_invalid: bool | None = None,
         page: int = 1,
         page_size: int = 100,
         vocab_release: str | None = None,
@@ -198,7 +208,11 @@ class AsyncMappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
-            include_invalid: Include invalid/deprecated mappings
+            include_invalid: Whether to return mappings whose relationship or
+                target concept is deprecated. Omit to take the server default,
+                which for this endpoint is to **include** them; pass ``False``
+                to exclude them. The source concept is never filtered, so a
+                deprecated concept still returns what it maps to.
             page: Page number, 1-based (default 1)
             page_size: Mappings per page (default 100). The server clamps this to
                 200 on this endpoint and does not report having done so, so a
@@ -206,13 +220,15 @@ class AsyncMappings:
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mappings for the concept, with pagination detail in ``meta.pagination``
+            The response ``data`` field only. ``meta.pagination`` is **not**
+            part of it, so nothing in this return value tells you whether the
+            mappings were truncated -- use :meth:`get_iter` when that matters.
         """
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
-        if include_invalid:
-            params["include_invalid"] = "true"
+        if include_invalid is not None:
+            params["include_invalid"] = "true" if include_invalid else "false"
         if vocab_release:
             params["vocab_release"] = vocab_release
 
@@ -225,7 +241,7 @@ class AsyncMappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
-        include_invalid: bool = False,
+        include_invalid: bool | None = None,
         page_size: int = 100,
         vocab_release: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
@@ -238,7 +254,11 @@ class AsyncMappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
-            include_invalid: Include invalid/deprecated mappings
+            include_invalid: Whether to return mappings whose relationship or
+                target concept is deprecated. Omit to take the server default,
+                which for this endpoint is to **include** them; pass ``False``
+                to exclude them. The source concept is never filtered, so a
+                deprecated concept still returns what it maps to.
             page_size: Mappings fetched per request (default 100, server max 200)
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
@@ -252,8 +272,8 @@ class AsyncMappings:
             params: dict[str, Any] = {"page": page, "page_size": size}
             if target_vocabulary:
                 params["target_vocabulary"] = target_vocabulary
-            if include_invalid:
-                params["include_invalid"] = "true"
+            if include_invalid is not None:
+                params["include_invalid"] = "true" if include_invalid else "false"
             if vocab_release:
                 params["vocab_release"] = vocab_release
 

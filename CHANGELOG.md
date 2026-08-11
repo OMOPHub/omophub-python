@@ -20,6 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `data` field only, so the `meta.pagination` that would tell you the set was
   truncated is not part of what you get back.
 
+### Fixed
+
+- `include_invalid=False` now reaches the server on `Mappings.get()` /
+  `get_iter()` and their async counterparts. The parameter was only sent when
+  truthy, and this endpoint defaults to *including* deprecated mappings, so
+  asking to exclude them did nothing. It is now `bool | None`: omit it for the
+  server default, pass `False` to exclude. Omitting it behaves exactly as
+  before, so only callers who explicitly passed `False` - and were being
+  ignored.
+
 
 ## [1.8.1] - 2026-06-01
 
@@ -291,7 +301,8 @@ and are not shipped in the wheel/sdist.
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/omopHub/omophub-python/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/omopHub/omophub-python/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/omopHub/omophub-python/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/omopHub/omophub-python/compare/v1.7.0...v1.7.1
