@@ -22,9 +22,12 @@ def get_mappings() -> None:
 
         print(f"Mappings for concept {concept_id} (this page: {len(mappings)}):")
         for m in mappings[:10]:
-            # A mapping row carries only these fields. Vocabulary id and
-            # concept code are NOT part of it -- fetch the target concept if
-            # you need them.
+            # `Mapping` types vocabulary_id / concept_code as NotRequired
+            # because it is shared with `mappings.map()`, which does populate
+            # them. THIS endpoint does not: it projects each row down to
+            # source/target id + name, relationship_id and confidence. Resolve
+            # a code with `concepts.get(target_concept_id)` -- see
+            # map_to_a_specific_vocabulary() below.
             print(
                 f"  {m.get('relationship_id')}: "
                 f"{m.get('target_concept_id')} {m.get('target_concept_name')}"
@@ -64,8 +67,19 @@ def map_to_a_specific_vocabulary() -> None:
             )
         )
         print(f"  'Mapped from' + ICD10CM: {len(icd_codes)} rows")
+
+        # The mapping row has the target's id and name but not its code, so
+        # resolve the first few. One request each -- fine for five rows, not
+        # for the full 74.
         for m in icd_codes[:5]:
-            print(f"    <- {m.get('target_concept_id')} {m.get('target_concept_name')}")
+            target_id = m.get("target_concept_id")
+            if target_id is None:
+                continue
+            target = client.concepts.get(target_id)
+            print(
+                f"    <- [{target.get('vocabulary_id', '?')}] "
+                f"{target.get('concept_code', '?')} {target.get('concept_name', '?')}"
+            )
     except omophub.OMOPHubError as e:
         print(f"API error: {e.message}")
     finally:
@@ -86,13 +100,18 @@ def get_every_mapping() -> None:
         concept_id = 201826
 
         # get_iter() follows has_next to the end; it never has to guess from
-        # the page length.
-        all_mappings = list(client.mappings.get_iter(concept_id))
-        print(f"  {len(all_mappings)} mappings in total")
-
-        # Streaming, if you would rather not hold them all at once.
+        # the page length. It yields one mapping at a time, so you can consume
+        # the whole set without holding it -- count here, but this is where a
+        # real code list would accumulate what it needs.
+        #
+        # `list(client.mappings.get_iter(...))` materialises the same walk if
+        # you do want them all at once; do not do both, it is two round trips
+        # over every page.
+        total = 0
         for m in client.mappings.get_iter(concept_id):
-            _ = m["target_concept_name"]
+            _ = m.get("target_concept_name")
+            total += 1
+        print(f"  {total} mappings in total")
     except omophub.OMOPHubError as e:
         print(f"API error: {e.message}")
     finally:

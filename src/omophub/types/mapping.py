@@ -31,6 +31,19 @@ class MappingContext(TypedDict, total=False):
 class Mapping(TypedDict):
     """Concept mapping to another vocabulary.
 
+    The optional fields are optional because this type is shared by two
+    endpoints that populate different subsets -- not because the server
+    decides case by case:
+
+    - ``mappings.get`` (``GET /concepts/{id}/mappings``) returns exactly
+      ``source_concept_id``, ``source_concept_name``, ``target_concept_id``,
+      ``target_concept_name``, ``relationship_id`` and ``confidence``.
+      Supplying ``target_vocabulary`` does NOT add the vocabulary/code fields
+      -- measured against production 2026-08-12. Resolve a target's vocabulary
+      and code with ``concepts.get(target_concept_id)``.
+    - ``mappings.map`` (``POST /mappings/map``) additionally returns the
+      ``source_*`` / ``target_*`` ``vocabulary_id`` and ``concept_code``.
+
     Note: Confidence score should be accessed via `quality.confidence_score`
     when include_mapping_quality=True is requested.
     """
