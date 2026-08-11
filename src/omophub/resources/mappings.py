@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from .._pagination import paginate_async, paginate_sync
+
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+
     from .._request import AsyncRequest, Request
+    from .._types import PaginationMeta
 
 
 class Mappings:
@@ -20,20 +25,32 @@ class Mappings:
         *,
         target_vocabulary: str | None = None,
         include_invalid: bool = False,
+        page: int = 1,
+        page_size: int = 100,
         vocab_release: str | None = None,
     ) -> dict[str, Any]:
         """Get mappings for a concept.
+
+        A concept can have more mappings than one page carries, and this
+        method returns the ``data`` field only — the pagination metadata that
+        would tell you so is not part of what you get back. Use
+        :meth:`get_iter` when you need every mapping, and treat a full page here
+        as "there is probably more" rather than as the complete set.
 
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
             include_invalid: Include invalid/deprecated mappings
+            page: Page number, 1-based (default 1)
+            page_size: Mappings per page (default 100). The server clamps this to
+                200 on this endpoint and does not report having done so, so a
+                larger value silently yields a smaller page.
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mappings for the concept
+            Mappings for the concept, with pagination detail in ``meta.pagination``
         """
-        params: dict[str, Any] = {}
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
         if include_invalid:
@@ -44,6 +61,55 @@ class Mappings:
         return self._request.get(
             f"/concepts/{concept_id}/mappings", params=params or None
         )
+
+    def get_iter(
+        self,
+        concept_id: int,
+        *,
+        target_vocabulary: str | None = None,
+        include_invalid: bool = False,
+        page_size: int = 100,
+        vocab_release: str | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        """Iterate over every mapping for a concept, across all pages.
+
+        Prefer this to :meth:`get` when you are building a code list. A single
+        page is capped server-side, so a concept with more mappings than the
+        page size yields a subset that looks exactly like a complete answer.
+
+        Args:
+            concept_id: The concept ID
+            target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            include_invalid: Include invalid/deprecated mappings
+            page_size: Mappings fetched per request (default 100, server max 200)
+            vocab_release: Specific vocabulary release version (e.g., "2025.1")
+
+        Yields:
+            Individual mappings from all pages
+        """
+
+        def fetch_page(
+            page: int, size: int
+        ) -> tuple[list[dict[str, Any]], PaginationMeta | None]:
+            params: dict[str, Any] = {"page": page, "page_size": size}
+            if target_vocabulary:
+                params["target_vocabulary"] = target_vocabulary
+            if include_invalid:
+                params["include_invalid"] = "true"
+            if vocab_release:
+                params["vocab_release"] = vocab_release
+
+            # get_raw() rather than get(): the pagination meta is the entire
+            # point here and get() discards it.
+            result = self._request.get_raw(
+                f"/concepts/{concept_id}/mappings", params=params
+            )
+            data = result.get("data") or {}
+            mappings = data.get("mappings", []) if isinstance(data, dict) else data
+            meta = result.get("meta", {}).get("pagination")
+            return mappings, meta
+
+        yield from paginate_sync(fetch_page, page_size)
 
     def map(
         self,
@@ -117,20 +183,32 @@ class AsyncMappings:
         *,
         target_vocabulary: str | None = None,
         include_invalid: bool = False,
+        page: int = 1,
+        page_size: int = 100,
         vocab_release: str | None = None,
     ) -> dict[str, Any]:
         """Get mappings for a concept.
+
+        A concept can have more mappings than one page carries, and this
+        method returns the ``data`` field only — the pagination metadata that
+        would tell you so is not part of what you get back. Use
+        :meth:`get_iter` when you need every mapping, and treat a full page here
+        as "there is probably more" rather than as the complete set.
 
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
             include_invalid: Include invalid/deprecated mappings
+            page: Page number, 1-based (default 1)
+            page_size: Mappings per page (default 100). The server clamps this to
+                200 on this endpoint and does not report having done so, so a
+                larger value silently yields a smaller page.
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mappings for the concept
+            Mappings for the concept, with pagination detail in ``meta.pagination``
         """
-        params: dict[str, Any] = {}
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
         if include_invalid:
@@ -141,6 +219,56 @@ class AsyncMappings:
         return await self._request.get(
             f"/concepts/{concept_id}/mappings", params=params or None
         )
+
+    async def get_iter(
+        self,
+        concept_id: int,
+        *,
+        target_vocabulary: str | None = None,
+        include_invalid: bool = False,
+        page_size: int = 100,
+        vocab_release: str | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Iterate over every mapping for a concept, across all pages.
+
+        Prefer this to :meth:`get` when you are building a code list. A single
+        page is capped server-side, so a concept with more mappings than the
+        page size yields a subset that looks exactly like a complete answer.
+
+        Args:
+            concept_id: The concept ID
+            target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            include_invalid: Include invalid/deprecated mappings
+            page_size: Mappings fetched per request (default 100, server max 200)
+            vocab_release: Specific vocabulary release version (e.g., "2025.1")
+
+        Yields:
+            Individual mappings from all pages
+        """
+
+        async def fetch_page(
+            page: int, size: int
+        ) -> tuple[list[dict[str, Any]], PaginationMeta | None]:
+            params: dict[str, Any] = {"page": page, "page_size": size}
+            if target_vocabulary:
+                params["target_vocabulary"] = target_vocabulary
+            if include_invalid:
+                params["include_invalid"] = "true"
+            if vocab_release:
+                params["vocab_release"] = vocab_release
+
+            # get_raw() rather than get(): the pagination meta is the entire
+            # point here and get() discards it.
+            result = await self._request.get_raw(
+                f"/concepts/{concept_id}/mappings", params=params
+            )
+            data = result.get("data") or {}
+            mappings = data.get("mappings", []) if isinstance(data, dict) else data
+            meta = result.get("meta", {}).get("pagination")
+            return mappings, meta
+
+        async for item in paginate_async(fetch_page, page_size):
+            yield item
 
     async def map(
         self,
