@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-08-11
+
+### Added
+
+- `Mappings.get()` / `AsyncMappings.get()` accept `page` and `page_size`.
+  `GET /v1/concepts/{id}/mappings` became paginated; before that
+  it applied a fixed `LIMIT 100` server-side with no total and no `has_next`, so
+  a concept with 1,500 mappings returned 100 of them and nothing in the response
+  said so. `page_size` defaults to 100, matching the old cap, so an existing
+  call returns exactly the page it returned before.
+- `Mappings.get_iter()` / `AsyncMappings.get_iter()` walk every page and yield
+  each mapping. Prefer these when building a code list: `get()` returns the
+  `data` field only, so the `meta.pagination` that would tell you the set was
+  truncated is not part of what you get back.
+
+### Fixed
+
+- `include_invalid=False` now reaches the server on `Mappings.get()` /
+  `get_iter()` and their async counterparts. The parameter was only sent when
+  truthy, and this endpoint defaults to *including* deprecated mappings, so
+  asking to exclude them did nothing. It is now `bool | None`: omit it for the
+  server default, pass `False` to exclude. Omitting it behaves exactly as
+  before, so only callers who explicitly passed `False` - and were being
+  ignored.
+
+
 ## [1.8.1] - 2026-06-01
 
 ### Changed
@@ -22,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `FhirResolution` now types the `value_as_concept` and `value_target_field`
   fields the resolver returns when a composite concept is decomposed via the
-  `Maps to value` relationship (HL7 FHIR-to-OMOP IG Value-as-Concept pattern —
+  `Maps to value` relationship (HL7 FHIR-to-OMOP IG Value-as-Concept pattern -
   e.g. "Allergy to penicillin" → standard "Allergy to drug" + value
   "Penicillin G"), plus `concept_map_id` / `mapping_note` for FHIR
   administrative-code resolutions. These were already passed through; they are
@@ -38,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.1] - 2026-05-20
 
-Maintenance release. Dependency and lock-file updates only — there are no
+Maintenance release. Dependency and lock-file updates only - there are no
 source code or public API changes. The published runtime dependencies
 (`httpx`, `typing_extensions`) are unchanged; the updates below affect the
 pinned development, testing, and optional-extra dependencies in `uv.lock`
@@ -49,12 +75,12 @@ and are not shipped in the wheel/sdist.
 - Updated pinned development and transitive dependencies in `uv.lock` to
   resolve reported advisories. None of these affect the published runtime
   dependencies:
-  - `idna` 3.11 → 3.15 — fixes a bypass of the CVE-2024-3651 mitigation in
+  - `idna` 3.11 → 3.15 - fixes a bypass of the CVE-2024-3651 mitigation in
     `idna.encode()` (transitive via `httpx`/`anyio`).
-  - `pytest` 9.0.2 → 9.0.3 — fixes vulnerable tmpdir handling (dev only).
-  - `python-dotenv` 1.2.1 → 1.2.2 — fixes symlink following in `set_key`
+  - `pytest` 9.0.2 → 9.0.3 - fixes vulnerable tmpdir handling (dev only).
+  - `python-dotenv` 1.2.1 → 1.2.2 - fixes symlink following in `set_key`
     that allowed arbitrary file overwrite (dev only).
-  - `pygments` 2.19.2 → 2.20.0 — fixes a ReDoS in GUID matching
+  - `pygments` 2.19.2 → 2.20.0 - fixes a ReDoS in GUID matching
     (transitive, dev only).
 
 ### Changed
@@ -275,7 +301,8 @@ and are not shipped in the wheel/sdist.
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/omopHub/omophub-python/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/omopHub/omophub-python/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/omopHub/omophub-python/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/omopHub/omophub-python/compare/v1.7.0...v1.7.1

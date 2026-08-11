@@ -60,6 +60,130 @@ class TestMappingsResource:
         assert "include_invalid=true" in url_str
 
     @respx.mock
+    def test_get_mappings_include_invalid_is_tri_state(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """False must reach the wire, not be dropped as falsy.
+
+        This endpoint defaults to *including* deprecated mappings, so omitting
+        the parameter and sending ``false`` mean different things. Sending
+        nothing for ``include_invalid=False`` silently returned the rows the
+        caller asked to exclude.
+        """
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
+        )
+
+        sync_client.mappings.get(201826)
+        assert "include_invalid" not in str(route.calls[0].request.url)
+
+        sync_client.mappings.get(201826, include_invalid=False)
+        assert "include_invalid=false" in str(route.calls[1].request.url)
+
+        sync_client.mappings.get(201826, include_invalid=True)
+        assert "include_invalid=true" in str(route.calls[2].request.url)
+
+    @respx.mock
+    def test_get_iter_forwards_include_invalid_false(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """The same tri-state has to survive the pagination helper."""
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": []},
+                    "meta": {
+                        "pagination": {
+                            "page": 1,
+                            "page_size": 100,
+                            "total_items": 0,
+                            "total_pages": 0,
+                            "has_next": False,
+                            "has_previous": False,
+                        }
+                    },
+                },
+            )
+        )
+
+        list(sync_client.mappings.get_iter(201826, include_invalid=False))
+        assert "include_invalid=false" in str(route.calls[0].request.url)
+
+    @respx.mock
+    def test_get_mappings_sends_pagination(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """page/page_size reach the wire, including their defaults."""
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
+        )
+
+        sync_client.mappings.get(201826)
+        default_url = str(route.calls[0].request.url)
+        assert "page=1" in default_url
+        assert "page_size=100" in default_url
+
+        sync_client.mappings.get(201826, page=3, page_size=200)
+        paged_url = str(route.calls[1].request.url)
+        assert "page=3" in paged_url
+        assert "page_size=200" in paged_url
+
+    @respx.mock
+    def test_get_iter_walks_every_page(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """get_iter follows has_next instead of stopping at the first page."""
+        pages = [
+            Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": [{"target_concept_id": 1}]},
+                    "meta": {"pagination": {"has_next": True, "total_items": 2}},
+                },
+            ),
+            Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": [{"target_concept_id": 2}]},
+                    "meta": {"pagination": {"has_next": False, "total_items": 2}},
+                },
+            ),
+        ]
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            side_effect=pages
+        )
+
+        result = list(sync_client.mappings.get_iter(201826, page_size=1))
+
+        assert [m["target_concept_id"] for m in result] == [1, 2]
+        assert len(route.calls) == 2
+        assert "page=2" in str(route.calls[1].request.url)
+
+    @respx.mock
+    def test_get_iter_stops_without_pagination_meta(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """A response with no pagination meta terminates rather than looping."""
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": [{"target_concept_id": 1}]},
+                },
+            )
+        )
+
+        result = list(sync_client.mappings.get_iter(201826))
+
+        assert len(result) == 1
+        assert len(route.calls) == 1
+
+    @respx.mock
     def test_map_concepts(self, sync_client: OMOPHub, base_url: str) -> None:
         """Test mapping concepts to a target vocabulary."""
         map_response = {
@@ -199,6 +323,40 @@ class TestAsyncMappingsResource:
         url_str = str(route.calls[0].request.url)
         assert "target_vocabulary=ICD10CM" in url_str
         assert "include_invalid=true" in url_str
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_get_iter_walks_every_page(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """Async get_iter follows has_next across pages."""
+        pages = [
+            Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": [{"target_concept_id": 1}]},
+                    "meta": {"pagination": {"has_next": True, "total_items": 2}},
+                },
+            ),
+            Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": [{"target_concept_id": 2}]},
+                    "meta": {"pagination": {"has_next": False, "total_items": 2}},
+                },
+            ),
+        ]
+        route = respx.get(f"{base_url}/concepts/201826/mappings").mock(
+            side_effect=pages
+        )
+
+        result = [m async for m in async_client.mappings.get_iter(201826, page_size=1)]
+
+        assert [m["target_concept_id"] for m in result] == [1, 2]
+        assert len(route.calls) == 2
+        assert "page=2" in str(route.calls[1].request.url)
 
     @pytest.mark.asyncio
     @respx.mock
