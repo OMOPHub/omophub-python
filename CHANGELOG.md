@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `data` field only, so the `meta.pagination` that would tell you the set was
   truncated is not part of what you get back.
 
+- `relationship_ids` on `Mappings.get()` / `get_iter()` and their async
+  counterparts, as a list or a comma-separated string. The server defaults to
+  `["Maps to"]`, so a composite concept returns only half its decomposition
+  unless `"Maps to value"` is asked for too: "Allergy to penicillin G" maps to
+  "Allergy to drug" via `Maps to` and to "penicillin G" via `Maps to value`.
+
 ### Fixed
 
 - `include_invalid=False` now reaches the server on `Mappings.get()` /

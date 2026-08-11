@@ -24,6 +24,7 @@ class Mappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
+        relationship_ids: str | list[str] | None = None,
         include_invalid: bool | None = None,
         page: int = 1,
         page_size: int = 100,
@@ -40,6 +41,13 @@ class Mappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            relationship_ids: Relationship types to return, as a list or a
+                comma-separated string. Defaults server-side to ``["Maps to"]``.
+                Pass ``["Maps to", "Maps to value"]`` to also get the
+                Value-as-Concept decomposition of composite concepts -- e.g.
+                "Allergy to penicillin G" maps to "Allergy to drug" via
+                ``Maps to`` and to "penicillin G" via ``Maps to value``, and the
+                default returns only the first of those.
             include_invalid: Whether to return mappings whose relationship or
                 target concept is deprecated. Omit to take the server default,
                 which for this endpoint is to **include** them; pass ``False``
@@ -59,6 +67,12 @@ class Mappings:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
+        if relationship_ids:
+            params["relationship_ids"] = (
+                ",".join(relationship_ids)
+                if isinstance(relationship_ids, list)
+                else relationship_ids
+            )
         if include_invalid is not None:
             params["include_invalid"] = "true" if include_invalid else "false"
         if vocab_release:
@@ -73,6 +87,7 @@ class Mappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
+        relationship_ids: str | list[str] | None = None,
         include_invalid: bool | None = None,
         page_size: int = 100,
         vocab_release: str | None = None,
@@ -86,6 +101,13 @@ class Mappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            relationship_ids: Relationship types to return, as a list or a
+                comma-separated string. Defaults server-side to ``["Maps to"]``.
+                Pass ``["Maps to", "Maps to value"]`` to also get the
+                Value-as-Concept decomposition of composite concepts -- e.g.
+                "Allergy to penicillin G" maps to "Allergy to drug" via
+                ``Maps to`` and to "penicillin G" via ``Maps to value``, and the
+                default returns only the first of those.
             include_invalid: Whether to return mappings whose relationship or
                 target concept is deprecated. Omit to take the server default,
                 which for this endpoint is to **include** them; pass ``False``
@@ -104,6 +126,12 @@ class Mappings:
             params: dict[str, Any] = {"page": page, "page_size": size}
             if target_vocabulary:
                 params["target_vocabulary"] = target_vocabulary
+            if relationship_ids:
+                params["relationship_ids"] = (
+                    ",".join(relationship_ids)
+                    if isinstance(relationship_ids, list)
+                    else relationship_ids
+                )
             if include_invalid is not None:
                 params["include_invalid"] = "true" if include_invalid else "false"
             if vocab_release:
@@ -192,6 +220,7 @@ class AsyncMappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
+        relationship_ids: str | list[str] | None = None,
         include_invalid: bool | None = None,
         page: int = 1,
         page_size: int = 100,
@@ -208,6 +237,13 @@ class AsyncMappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            relationship_ids: Relationship types to return, as a list or a
+                comma-separated string. Defaults server-side to ``["Maps to"]``.
+                Pass ``["Maps to", "Maps to value"]`` to also get the
+                Value-as-Concept decomposition of composite concepts -- e.g.
+                "Allergy to penicillin G" maps to "Allergy to drug" via
+                ``Maps to`` and to "penicillin G" via ``Maps to value``, and the
+                default returns only the first of those.
             include_invalid: Whether to return mappings whose relationship or
                 target concept is deprecated. Omit to take the server default,
                 which for this endpoint is to **include** them; pass ``False``
@@ -227,6 +263,12 @@ class AsyncMappings:
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         if target_vocabulary:
             params["target_vocabulary"] = target_vocabulary
+        if relationship_ids:
+            params["relationship_ids"] = (
+                ",".join(relationship_ids)
+                if isinstance(relationship_ids, list)
+                else relationship_ids
+            )
         if include_invalid is not None:
             params["include_invalid"] = "true" if include_invalid else "false"
         if vocab_release:
@@ -241,6 +283,7 @@ class AsyncMappings:
         concept_id: int,
         *,
         target_vocabulary: str | None = None,
+        relationship_ids: str | list[str] | None = None,
         include_invalid: bool | None = None,
         page_size: int = 100,
         vocab_release: str | None = None,
@@ -254,6 +297,13 @@ class AsyncMappings:
         Args:
             concept_id: The concept ID
             target_vocabulary: Filter to a specific target vocabulary (e.g., "ICD10CM")
+            relationship_ids: Relationship types to return, as a list or a
+                comma-separated string. Defaults server-side to ``["Maps to"]``.
+                Pass ``["Maps to", "Maps to value"]`` to also get the
+                Value-as-Concept decomposition of composite concepts -- e.g.
+                "Allergy to penicillin G" maps to "Allergy to drug" via
+                ``Maps to`` and to "penicillin G" via ``Maps to value``, and the
+                default returns only the first of those.
             include_invalid: Whether to return mappings whose relationship or
                 target concept is deprecated. Omit to take the server default,
                 which for this endpoint is to **include** them; pass ``False``
@@ -272,6 +322,12 @@ class AsyncMappings:
             params: dict[str, Any] = {"page": page, "page_size": size}
             if target_vocabulary:
                 params["target_vocabulary"] = target_vocabulary
+            if relationship_ids:
+                params["relationship_ids"] = (
+                    ",".join(relationship_ids)
+                    if isinstance(relationship_ids, list)
+                    else relationship_ids
+                )
             if include_invalid is not None:
                 params["include_invalid"] = "true" if include_invalid else "false"
             if vocab_release:
