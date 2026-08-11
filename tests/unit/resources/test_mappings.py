@@ -60,6 +60,65 @@ class TestMappingsResource:
         assert "include_invalid=true" in url_str
 
     @respx.mock
+    def test_get_mappings_sends_relationship_ids(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Value-as-Concept is unreachable without this parameter.
+
+        The server defaults to `Maps to` alone, so a composite concept returns
+        only half its decomposition unless `Maps to value` is asked for.
+        """
+        route = respx.get(f"{base_url}/concepts/4167462/mappings").mock(
+            return_value=Response(200, json={"success": True, "data": {"mappings": []}})
+        )
+
+        sync_client.mappings.get(4167462)
+        assert "relationship_ids" not in str(route.calls[0].request.url)
+
+        sync_client.mappings.get(4167462, relationship_ids=["Maps to", "Maps to value"])
+        assert route.calls[1].request.url.params["relationship_ids"] == (
+            "Maps to,Maps to value"
+        )
+
+        # A bare string is passed through unjoined, matching concepts.relationships().
+        sync_client.mappings.get(4167462, relationship_ids="Maps to value")
+        assert route.calls[2].request.url.params["relationship_ids"] == "Maps to value"
+
+    @respx.mock
+    def test_get_iter_forwards_relationship_ids(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """The filter has to survive the pagination helper too."""
+        route = respx.get(f"{base_url}/concepts/4167462/mappings").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"mappings": []},
+                    "meta": {
+                        "pagination": {
+                            "page": 1,
+                            "page_size": 100,
+                            "total_items": 0,
+                            "total_pages": 0,
+                            "has_next": False,
+                            "has_previous": False,
+                        }
+                    },
+                },
+            )
+        )
+
+        list(
+            sync_client.mappings.get_iter(
+                4167462, relationship_ids=["Maps to", "Maps to value"]
+            )
+        )
+        assert route.calls[0].request.url.params["relationship_ids"] == (
+            "Maps to,Maps to value"
+        )
+
+    @respx.mock
     def test_get_mappings_include_invalid_is_tri_state(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
