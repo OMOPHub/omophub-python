@@ -1,0 +1,28 @@
+CHANGELOG.md
+  h_70ae365dc0c3d1 23-32,304-305
+src/omophub/resources/mappings.py
+  s_675010497a6bc7::t_04d4f653104d65 27,43-47,55-57,62-63,76,89-93,107-108,195,211-215,223-225,230-231,244,257-261,275-276
+tests/unit/resources/test_mappings.py
+  s_675010497a6bc7::t_1fecea531c7f6a 62-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "d7eb5325c74642cb2e26408dbe02af130f410450",
+  "prompts": {},
+  "humans": {
+    "h_70ae365dc0c3d1": {
+      "author": "alex-omophub <sdk@omophub.com>"
+    }
+  },
+  "sessions": {
+    "s_675010497a6bc7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac8e644b-8ae2-49d5-94a0-66989382a45d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
