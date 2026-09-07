@@ -185,10 +185,13 @@ def map_concepts() -> None:
         )
 
         mappings = result.get("mappings", [])
-        summary = result.get("mapping_summary", {})
+        summary = result.get("summary", {})
 
         print(f"Mapped {len(mappings)} concepts to ICD-10-CM")
-        print(f"Coverage: {summary.get('coverage_percentage', 'N/A')}%")
+        print(
+            f"Mapped sources: {summary.get('mapped_sources', 0)}/"
+            f"{summary.get('requested_sources', 0)}"
+        )
 
         for m in mappings:
             source_name = m.get("source_concept_name", "Unknown")

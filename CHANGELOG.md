@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-09-07
+
+### Added
+
+- Similarity search now exposes pagination, the full supported filter/options
+  set, source-concept metadata, and lower-bound/degraded-search indicators.
+- `ResponseError` distinguishes an unreadable autocomplete response from a
+  legitimate empty result.
+
+### Changed
+
+- Autocomplete uses `domain_ids`, accepts the deprecated `domains` alias, and
+  models the API's seven-field suggestion entries. Similarity search now uses
+  the API's `semantic` default algorithm.
+
+### Fixed
+
+- `Mappings.map()` / `AsyncMappings.map()` now send their declared
+  `include_invalid=False` default explicitly. Their documentation now describes
+  the API's per-source `unmapped_sources` and required `summary` result fields.
+
 ## [1.9.0] - 2026-08-11
 
 ### Added
@@ -307,7 +328,8 @@ and are not shipped in the wheel/sdist.
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.1...HEAD
+[1.9.1]: https://github.com/omopHub/omophub-python/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/omopHub/omophub-python/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/omopHub/omophub-python/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/omopHub/omophub-python/compare/v1.7.1...v1.8.0

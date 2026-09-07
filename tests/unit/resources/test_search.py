@@ -8,6 +8,8 @@ import pytest
 import respx
 from httpx import Response
 
+from omophub import ResponseError
+
 if TYPE_CHECKING:
     import omophub
     from omophub import OMOPHub
@@ -159,10 +161,29 @@ class TestSearchResource:
         """Test autocomplete suggestions."""
         autocomplete_response = {
             "success": True,
-            "data": [
-                {"suggestion": "diabetes mellitus", "type": "concept_name"},
-                {"suggestion": "diabetic", "type": "concept_name"},
-            ],
+            "data": {
+                "query": "diab",
+                "suggestions": [
+                    {
+                        "suggestion": "diabetes mellitus",
+                        "concept_id": 201826,
+                        "concept_code": "44054006",
+                        "vocabulary_id": "SNOMED",
+                        "domain_id": "Condition",
+                        "concept_class_id": "Clinical Finding",
+                        "standard_concept": "S",
+                    },
+                    {
+                        "suggestion": "diabetic",
+                        "concept_id": 123,
+                        "concept_code": "123",
+                        "vocabulary_id": "SNOMED",
+                        "domain_id": "Condition",
+                        "concept_class_id": "Clinical Finding",
+                        "standard_concept": "S",
+                    },
+                ],
+            },
         }
         route = respx.get(f"{base_url}/search/suggest").mock(
             return_value=Response(200, json=autocomplete_response)
@@ -171,7 +192,7 @@ class TestSearchResource:
         result = sync_client.search.autocomplete(
             "diab",
             vocabulary_ids=["SNOMED"],
-            domains=["Condition"],
+            domain_ids=["Condition"],
             page_size=5,
         )
 
@@ -179,8 +200,89 @@ class TestSearchResource:
         url_str = str(route.calls[0].request.url)
         assert "query=diab" in url_str
         assert "vocabulary_ids=SNOMED" in url_str
-        assert "domains=Condition" in url_str
+        assert "domain_ids=Condition" in url_str
         assert "page_size=5" in url_str
+
+    @respx.mock
+    def test_autocomplete_accepts_a_bare_list(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """The older response shape stays supported."""
+        respx.get(f"{base_url}/search/suggest").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": [{"suggestion": "diabetes"}]},
+            )
+        )
+
+        assert len(sync_client.search.autocomplete("diab")) == 1
+
+    @respx.mock
+    def test_autocomplete_returns_empty_for_no_matches(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """An empty list is a real answer and must not raise."""
+        respx.get(f"{base_url}/search/suggest").mock(
+            return_value=Response(
+                200,
+                json={"success": True, "data": {"query": "zzz", "suggestions": []}},
+            )
+        )
+
+        assert sync_client.search.autocomplete("zzz") == []
+
+    @respx.mock
+    @pytest.mark.parametrize(
+        ("payload", "expected"),
+        [
+            ({"query": "diab"}, "no 'suggestions' key"),
+            ({"suggestions": {"a": 1}}, "expected list"),
+            ("diabetes", "expected a list or an object"),
+        ],
+    )
+    def test_autocomplete_raises_on_an_unreadable_payload(
+        self,
+        sync_client: OMOPHub,
+        base_url: str,
+        payload: object,
+        expected: str,
+    ) -> None:
+        """Protocol drift must not read as "no suggestions".
+
+        Returning [] here made a changed response indistinguishable from an
+        empty result: the caller saw an empty box with no way to learn the SDK
+        could no longer read the server.
+        """
+        respx.get(f"{base_url}/search/suggest").mock(
+            return_value=Response(200, json={"success": True, "data": payload})
+        )
+
+        with pytest.raises(ResponseError) as excinfo:
+            sync_client.search.autocomplete("diab")
+
+        assert expected in str(excinfo.value)
+        assert excinfo.value.payload == payload
+
+    @respx.mock
+    def test_autocomplete_maps_deprecated_domains_alias(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """The old SDK option remains compatible without leaking to the API."""
+        route = respx.get(f"{base_url}/search/suggest").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"query": "diab", "suggestions": []},
+                },
+            )
+        )
+
+        sync_client.search.autocomplete("diab", domains=["Condition"])
+
+        url_str = str(route.calls[0].request.url)
+        assert "domain_ids=Condition" in url_str
+        assert "domains=" not in url_str
 
 
 class TestAsyncSearchResource:
@@ -258,13 +360,41 @@ class TestAsyncSearchResource:
 
     @pytest.mark.asyncio
     @respx.mock
+    async def test_async_autocomplete_raises_on_an_unreadable_payload(
+        self, async_client: omophub.AsyncOMOPHub, base_url: str
+    ) -> None:
+        """The async path shares the sync path's reader, and its contract."""
+        respx.get(f"{base_url}/search/suggest").mock(
+            return_value=Response(
+                200, json={"success": True, "data": {"query": "asp"}}
+            )
+        )
+
+        with pytest.raises(ResponseError):
+            await async_client.search.autocomplete("asp")
+
+    @pytest.mark.asyncio
+    @respx.mock
     async def test_async_autocomplete(
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async autocomplete."""
         autocomplete_response = {
             "success": True,
-            "data": [{"suggestion": "aspirin", "type": "concept_name"}],
+            "data": {
+                "query": "asp",
+                "suggestions": [
+                    {
+                        "suggestion": "aspirin",
+                        "concept_id": 111,
+                        "concept_code": "111",
+                        "vocabulary_id": "RxNorm",
+                        "domain_id": "Drug",
+                        "concept_class_id": "Ingredient",
+                        "standard_concept": "S",
+                    }
+                ],
+            },
         }
         respx.get(f"{base_url}/search/suggest").mock(
             return_value=Response(200, json=autocomplete_response)
@@ -433,10 +563,11 @@ class TestSimilarSearch:
                 ],
                 "search_metadata": {
                     "original_query": "4329847",
-                    "algorithm_used": "hybrid",
+                    "algorithm_used": "semantic",
                     "similarity_threshold": 0.7,
                     "total_candidates": 100,
                     "results_returned": 1,
+                    "totals_are_lower_bound": False,
                 },
             },
         }
@@ -453,8 +584,69 @@ class TestSimilarSearch:
 
         body = json.loads(route.calls[0].request.content)
         assert body["concept_id"] == 4329847
-        assert body["algorithm"] == "hybrid"
+        # The API's documented default. The SDK used to send "hybrid", so a
+        # caller who omitted `algorithm` got a different algorithm depending on
+        # which client they used.
+        assert body["algorithm"] == "semantic"
         assert body["similarity_threshold"] == 0.7
+
+    @respx.mock
+    def test_similar_exposes_pagination(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """Pagination lives in the envelope's meta, not in data.
+
+        Returning only `data` left callers with a `page` argument and no way to
+        tell whether another page existed.
+        """
+        respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {
+                        "similar_concepts": [],
+                        "search_metadata": {"algorithm_used": "semantic"},
+                    },
+                    "meta": {
+                        "pagination": {
+                            "page": 2,
+                            "page_size": 20,
+                            "total_items": 55,
+                            "total_pages": 3,
+                            "has_next": True,
+                            "has_previous": True,
+                        }
+                    },
+                },
+            )
+        )
+
+        result = sync_client.search.similar(concept_id=4329847, page=2)
+
+        assert result["pagination"]["has_next"] is True
+        assert result["pagination"]["page"] == 2
+        # The existing shape is unchanged.
+        assert "similar_concepts" in result
+
+    @respx.mock
+    def test_similar_without_pagination_meta(
+        self, sync_client: OMOPHub, base_url: str
+    ) -> None:
+        """A response carrying no pagination must not grow an empty key."""
+        respx.post(f"{base_url}/search/similar").mock(
+            return_value=Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {"similar_concepts": [], "search_metadata": {}},
+                },
+            )
+        )
+
+        result = sync_client.search.similar(concept_id=4329847)
+
+        assert "pagination" not in result
 
     @respx.mock
     def test_similar_by_concept_name(
@@ -752,7 +944,7 @@ class TestAsyncSemanticSearch:
             "success": True,
             "data": {
                 "similar_concepts": [{"concept_id": 1234, "similarity_score": 0.85}],
-                "search_metadata": {"algorithm_used": "hybrid"},
+                "search_metadata": {"algorithm_used": "semantic"},
             },
         }
         respx.post(f"{base_url}/search/similar").mock(

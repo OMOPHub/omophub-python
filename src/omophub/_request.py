@@ -175,6 +175,29 @@ class Request(Generic[T]):
         )
         return self._parse_response(content, status_code, headers)
 
+    def post_raw(
+        self,
+        path: str,
+        json_data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make a POST request and return the full response including ``meta``.
+
+        Unlike :meth:`post`, which extracts just the ``data`` field, this keeps
+        ``meta`` — which is where pagination lives. A paginated POST endpoint
+        served through :meth:`post` leaves the caller unable to tell whether
+        another page exists.
+        """
+        url = self._build_url(path)
+        content, status_code, headers = self._http_client.request(
+            "POST",
+            url,
+            headers=self._get_auth_headers(),
+            params=params,
+            json=json_data,
+        )
+        return self._parse_response_raw(content, status_code, headers)
+
 
 class AsyncRequest(Generic[T]):
     """Handles async API request execution and response parsing."""
@@ -273,3 +296,23 @@ class AsyncRequest(Generic[T]):
             json=json_data,
         )
         return self._parse_response(content, status_code, headers)
+
+    async def post_raw(
+        self,
+        path: str,
+        json_data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make an async POST request returning the full response with ``meta``.
+
+        See :meth:`Request.post_raw`.
+        """
+        url = self._build_url(path)
+        content, status_code, headers = await self._http_client.request(
+            "POST",
+            url,
+            headers=self._get_auth_headers(),
+            params=params,
+            json=json_data,
+        )
+        return self._parse_response_raw(content, status_code, headers)

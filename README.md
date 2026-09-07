@@ -61,6 +61,15 @@ for c in results["concepts"]:
 icd = client.concepts.get_by_code("ICD10CM", "E11.9")
 mappings = client.mappings.get(icd["concept_id"], target_vocabulary="SNOMED")
 
+# Or map native codes in one request. Every source that produces no mapping is
+# returned in unmapped_sources with source_not_found or no_mapping_found.
+mapped = client.mappings.map(
+    "SNOMED",
+    source_codes=[{"vocabulary_id": "ICD10CM", "concept_code": "E11.9"}],
+)
+print(mapped["summary"])
+print(mapped["unmapped_sources"])
+
 # Navigate concept hierarchy
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
 ```
@@ -237,9 +246,10 @@ results = client.search.bulk_semantic([
 Find concepts similar to a known concept or natural language query:
 
 ```python
-# Find concepts similar to a known concept
-results = client.search.similar(concept_id=201826, algorithm="hybrid")
-for r in results["results"]:
+# Find concepts similar to a known concept.
+# `algorithm` defaults to "semantic"; "lexical" and "hybrid" are also available.
+results = client.search.similar(concept_id=201826)
+for r in results["similar_concepts"]:
     print(f"{r['concept_name']} (score: {r['similarity_score']:.2f})")
 
 # Find similar concepts using a natural language query

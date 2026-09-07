@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
+from .._exceptions import ResponseError
 from .._pagination import DEFAULT_PAGE_SIZE, paginate_async, paginate_sync
 
 if TYPE_CHECKING:
@@ -57,6 +58,64 @@ class AdvancedSearchParams(TypedDict, total=False):
     date_range: dict[str, str]
     page: int
     page_size: int
+
+
+def _read_suggestions(payload: Any) -> list[Suggestion]:
+    """Read the suggestions out of an autocomplete payload.
+
+    `/search/suggest` has returned two shapes over its life: a bare list, and
+    an object with a `suggestions` key. Both are accepted.
+
+    Anything else raises. This used to `return []`, which made a changed
+    response indistinguishable from "no suggestions matched" - a caller saw an
+    empty box and had no way to learn the SDK could no longer read the server.
+    An empty list is a real answer and stays one; an unreadable payload is not.
+    """
+    if isinstance(payload, list):
+        return payload
+
+    if isinstance(payload, dict):
+        suggestions = payload.get("suggestions")
+        if isinstance(suggestions, list):
+            return suggestions
+        if suggestions is None:
+            raise ResponseError(
+                "autocomplete response has no 'suggestions' key "
+                f"(keys: {sorted(payload)})",
+                payload=payload,
+            )
+        raise ResponseError(
+            "autocomplete 'suggestions' is "
+            f"{type(suggestions).__name__}, expected list",
+            payload=payload,
+        )
+
+    raise ResponseError(
+        f"autocomplete response is {type(payload).__name__}, "
+        "expected a list or an object with a 'suggestions' key",
+        payload=payload,
+    )
+
+
+def _with_pagination(response: dict[str, Any]) -> SimilarSearchResult:
+    """Attach the envelope's pagination to the similarity result.
+
+    ``/v1/search/similar`` is paginated, but its pagination lives in the
+    response envelope's ``meta`` while the results live in ``data``. Returning
+    only ``data`` — as the plain ``post()`` helper does — left the caller with
+    a ``page`` parameter and no way to tell whether another page existed.
+
+    The pagination is added as a key on the returned result rather than
+    changing its shape, so ``result["similar_concepts"]`` keeps working.
+    """
+    data = response.get("data", response)
+    if not isinstance(data, dict):
+        return data
+
+    pagination = (response.get("meta") or {}).get("pagination")
+    if pagination is not None:
+        data = {**data, "pagination": pagination}
+    return data  # type: ignore[return-value]
 
 
 class Search:
@@ -261,6 +320,7 @@ class Search:
         query: str,
         *,
         vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
         domains: list[str] | None = None,
         page_size: int = 10,
     ) -> list[Suggestion]:
@@ -269,7 +329,8 @@ class Search:
         Args:
             query: Partial query string
             vocabulary_ids: Filter by vocabulary IDs
-            domains: Filter by domains
+            domain_ids: Filter by domain IDs
+            domains: Deprecated alias for ``domain_ids``
             page_size: Maximum suggestions to return
 
         Returns:
@@ -278,10 +339,12 @@ class Search:
         params: dict[str, Any] = {"query": query, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if domains:
-            params["domains"] = ",".join(domains)
+        selected_domains = domain_ids if domain_ids is not None else domains
+        if selected_domains:
+            params["domain_ids"] = ",".join(selected_domains)
 
-        return self._request.get("/search/suggest", params=params)
+        payload = self._request.get("/search/suggest", params=params)
+        return _read_suggestions(payload)
 
     def semantic(
         self,
@@ -455,15 +518,18 @@ class Search:
         concept_id: int | None = None,
         concept_name: str | None = None,
         query: str | None = None,
-        algorithm: Literal["semantic", "lexical", "hybrid"] = "hybrid",
+        algorithm: Literal["semantic", "lexical", "hybrid"] = "semantic",
         similarity_threshold: float = 0.7,
+        page: int = 1,
         page_size: int = 20,
         vocabulary_ids: list[str] | None = None,
         domain_ids: list[str] | None = None,
+        concept_class_ids: list[str] | None = None,
         standard_concept: Literal["S", "C", "N"] | None = None,
         include_invalid: bool | None = None,
         include_scores: bool | None = None,
         include_explanations: bool | None = None,
+        exclude_self: bool | None = None,
     ) -> SimilarSearchResult:
         """Find concepts similar to a reference concept or query.
 
@@ -473,15 +539,26 @@ class Search:
             concept_id: Find concepts similar to this concept ID
             concept_name: Find concepts similar to this name
             query: Natural language query for semantic similarity
-            algorithm: 'semantic' (neural), 'lexical' (text), or 'hybrid' (both)
-            similarity_threshold: Minimum similarity (0.0-1.0)
-            page_size: Max results to return (max 1000)
+            algorithm: 'semantic' (neural, default), 'lexical' (text), or
+                'hybrid' (both signals fused)
+            similarity_threshold: Minimum similarity (0.0-1.0). ``0`` is a
+                valid value and is honoured.
+            page: Page of the ranked candidate pool (1-based)
+            page_size: Results per page (max 1000)
             vocabulary_ids: Filter by vocabulary IDs
             domain_ids: Filter by domain IDs
-            standard_concept: Filter by standard concept flag
-            include_invalid: Include invalid/deprecated concepts
-            include_scores: Include detailed similarity scores
-            include_explanations: Include similarity explanations
+            concept_class_ids: Filter by concept class IDs
+            standard_concept: Filter by standard concept flag. ``'N'`` selects
+                non-standard concepts, which OMOP stores as a null column.
+            include_invalid: Include invalid/deprecated concepts. Supported
+                only with ``algorithm='lexical'``; the embedding index holds
+                valid concepts only, so the API returns 400 for the other two
+                rather than ignoring the filter. Defaults to ``False``.
+            include_scores: Include ``similarity_score`` on each concept
+                (default true). When false the key is absent.
+            include_explanations: Include an ``explanation`` on each concept
+            exclude_self: Exclude the reference concept from its own results
+                (default true)
 
         Returns:
             Similar concepts with similarity scores and metadata
@@ -491,7 +568,13 @@ class Search:
                 is provided.
 
         Note:
-            When algorithm='semantic', only single vocabulary/domain filter supported.
+            ``total_candidates`` counts the concepts that cleared
+            ``similarity_threshold`` inside a bounded candidate pool, not the
+            concepts evaluated, so it and the pagination totals can be lower
+            bounds -
+            ``search_metadata['totals_are_lower_bound']`` says when. Page while
+            ``has_next`` is true rather than comparing ``page`` to
+            ``total_pages``.
         """
         # Validate exactly one input source provided
         input_count = sum(x is not None for x in [concept_id, concept_name, query])
@@ -510,12 +593,16 @@ class Search:
             body["concept_name"] = concept_name
         if query is not None:
             body["query"] = query
+        if page != 1:
+            body["page"] = page
         if page_size != 20:
             body["page_size"] = page_size
         if vocabulary_ids:
             body["vocabulary_ids"] = vocabulary_ids
         if domain_ids:
             body["domain_ids"] = domain_ids
+        if concept_class_ids:
+            body["concept_class_ids"] = concept_class_ids
         if standard_concept:
             body["standard_concept"] = standard_concept
         if include_invalid is not None:
@@ -524,8 +611,12 @@ class Search:
             body["include_scores"] = include_scores
         if include_explanations is not None:
             body["include_explanations"] = include_explanations
+        if exclude_self is not None:
+            body["exclude_self"] = exclude_self
 
-        return self._request.post("/search/similar", json_data=body)
+        return _with_pagination(
+            self._request.post_raw("/search/similar", json_data=body)
+        )
 
 
 class AsyncSearch:
@@ -619,6 +710,7 @@ class AsyncSearch:
         query: str,
         *,
         vocabulary_ids: list[str] | None = None,
+        domain_ids: list[str] | None = None,
         domains: list[str] | None = None,
         page_size: int = 10,
     ) -> list[Suggestion]:
@@ -626,10 +718,12 @@ class AsyncSearch:
         params: dict[str, Any] = {"query": query, "page_size": page_size}
         if vocabulary_ids:
             params["vocabulary_ids"] = ",".join(vocabulary_ids)
-        if domains:
-            params["domains"] = ",".join(domains)
+        selected_domains = domain_ids if domain_ids is not None else domains
+        if selected_domains:
+            params["domain_ids"] = ",".join(selected_domains)
 
-        return await self._request.get("/search/suggest", params=params)
+        payload = await self._request.get("/search/suggest", params=params)
+        return _read_suggestions(payload)
 
     async def semantic(
         self,
@@ -747,15 +841,18 @@ class AsyncSearch:
         concept_id: int | None = None,
         concept_name: str | None = None,
         query: str | None = None,
-        algorithm: Literal["semantic", "lexical", "hybrid"] = "hybrid",
+        algorithm: Literal["semantic", "lexical", "hybrid"] = "semantic",
         similarity_threshold: float = 0.7,
+        page: int = 1,
         page_size: int = 20,
         vocabulary_ids: list[str] | None = None,
         domain_ids: list[str] | None = None,
+        concept_class_ids: list[str] | None = None,
         standard_concept: Literal["S", "C", "N"] | None = None,
         include_invalid: bool | None = None,
         include_scores: bool | None = None,
         include_explanations: bool | None = None,
+        exclude_self: bool | None = None,
     ) -> SimilarSearchResult:
         """Find concepts similar to a reference concept or query.
 
@@ -782,12 +879,16 @@ class AsyncSearch:
             body["concept_name"] = concept_name
         if query is not None:
             body["query"] = query
+        if page != 1:
+            body["page"] = page
         if page_size != 20:
             body["page_size"] = page_size
         if vocabulary_ids:
             body["vocabulary_ids"] = vocabulary_ids
         if domain_ids:
             body["domain_ids"] = domain_ids
+        if concept_class_ids:
+            body["concept_class_ids"] = concept_class_ids
         if standard_concept:
             body["standard_concept"] = standard_concept
         if include_invalid is not None:
@@ -796,5 +897,9 @@ class AsyncSearch:
             body["include_scores"] = include_scores
         if include_explanations is not None:
             body["include_explanations"] = include_explanations
+        if exclude_self is not None:
+            body["exclude_self"] = exclude_self
 
-        return await self._request.post("/search/similar", json_data=body)
+        return _with_pagination(
+            await self._request.post_raw("/search/similar", json_data=body)
+        )
