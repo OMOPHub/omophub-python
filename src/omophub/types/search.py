@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from .concept import Concept
 
 
-class Suggestion(TypedDict):
-    """Autocomplete suggestion."""
+class Suggestion(TypedDict, total=False):
+    """Autocomplete suggestion, including optional enriched concept metadata."""
 
-    suggestion: str
+    suggestion: Required[str]
     concept_id: int
     concept_code: str
     vocabulary_id: str
