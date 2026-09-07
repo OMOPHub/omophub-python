@@ -1,0 +1,58 @@
+src/omophub/_exceptions.py
+  s_98ecc778b4a653::t_01bb1dcde21284 82-95
+src/omophub/__init__.py
+  s_98ecc778b4a653::t_4505c37ab11ff3 89
+  s_98ecc778b4a653::t_01bb1dcde21284 28
+src/omophub/resources/search.py
+  s_98ecc778b4a653::t_e6267a99fd5a2e 113,119,617-619
+  s_cb3efafcb1bb83::t_836d9733cc2f27 342,721
+  s_98ecc778b4a653::t_2417c2880a568c 571-574
+  s_98ecc778b4a653::t_d215e3aad8f667 521,523,527,532,542-547,550-561,575-577,596-597,604-605,614-615,844,846,850,855,882-883,890-891,900-901
+  s_cb3efafcb1bb83::t_c7b7072551f21f 323,332-333,343-344,346,713,722-723,725
+  s_98ecc778b4a653::t_8cdbe005d9b6f9 7,63-99,347,726
+  s_98ecc778b4a653::t_5b2392ec3d2d43 100-112,114-118,120,903-905
+src/omophub/types/search.py
+  s_cb3efafcb1bb83::t_c7b7072551f21f 17-23
+  s_98ecc778b4a653::t_5b2392ec3d2d43 113-127,136
+  s_98ecc778b4a653::t_729ebb6852ee3b 48-55,66-68,70-73,90,93-110,135
+  s_98ecc778b4a653::t_2417c2880a568c 83-85,91-92
+  s_98ecc778b4a653::t_f405e067f62249 111-112
+tests/unit/resources/test_search.py
+  s_98ecc778b4a653::t_20131b44570378 11-12,164-186,195,203,206-286,361-375,384-397
+  s_98ecc778b4a653::t_c7da26d4353544 593-650
+  s_98ecc778b4a653::t_ad0c5f99c18360 566,570,587-590,947
+src/omophub/_request.py
+  s_98ecc778b4a653::t_6bacc3753437d3 299-318
+  s_98ecc778b4a653::t_42cb98aa059507 178-200
+src/omophub/types/__init__.py
+  s_98ecc778b4a653::t_4b56b49617c35e 66,70,133,137
+  s_98ecc778b4a653::t_5b2392ec3d2d43 68,135
+README.md
+  s_98ecc778b4a653::t_6c78be4b9c679c 240-243
+examples/search_concepts.py
+  s_98ecc778b4a653::t_6c78be4b9c679c 204-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "832439ba198699dadfcf6eddb17d5b4cfffc2475",
+  "prompts": {},
+  "sessions": {
+    "s_98ecc778b4a653": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5065d1dc-c4a4-48a0-93b9-5a45fc7fd268",
+        "model": "claude-opus-5"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    },
+    "s_cb3efafcb1bb83": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0711a-e039-7581-9315-ce61c6b90fac",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
