@@ -1,0 +1,24 @@
+tests/unit/test_request.py
+  s_0fd210701b7f1e::t_d02164cd7fc81a 648
+  s_0fd210701b7f1e::t_6d360dc0813fc0 340-416,646-647,649-733
+src/omophub/types/search.py
+  s_0fd210701b7f1e::t_6d360dc0813fc0 13-14,16
+examples/map_between_vocabularies.py
+  s_0fd210701b7f1e::t_6d360dc0813fc0 188,191-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "669559fd892d2f71eb10adbc0237d7cc68006d99",
+  "prompts": {},
+  "sessions": {
+    "s_0fd210701b7f1e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07885-99a7-7062-b3c0-03e7f1077c3d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
