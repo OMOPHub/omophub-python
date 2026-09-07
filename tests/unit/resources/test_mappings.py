@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -267,8 +268,9 @@ class TestMappingsResource:
         )
 
         assert "mappings" in result
-        # Verify request body was sent
-        assert route.calls[0].request.content
+        # The SDK's declared False default is part of the wire contract.
+        body = json.loads(route.calls[0].request.content)
+        assert body["include_invalid"] is False
 
     @respx.mock
     def test_map_concepts_with_options(
@@ -287,15 +289,14 @@ class TestMappingsResource:
         )
 
         # Verify POST body
-        assert route.calls[0].request.content
+        body = json.loads(route.calls[0].request.content)
+        assert body["include_invalid"] is True
 
     @respx.mock
     def test_map_concepts_with_source_codes(
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """Test mapping concepts using source_codes parameter."""
-        import json
-
         map_response = {
             "success": True,
             "data": {
@@ -423,7 +424,7 @@ class TestAsyncMappingsResource:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async mapping concepts."""
-        respx.post(f"{base_url}/concepts/map").mock(
+        route = respx.post(f"{base_url}/concepts/map").mock(
             return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )
 
@@ -433,6 +434,8 @@ class TestAsyncMappingsResource:
         )
 
         assert "mappings" in result
+        body = json.loads(route.calls[0].request.content)
+        assert body["include_invalid"] is False
 
     @pytest.mark.asyncio
     @respx.mock
@@ -451,7 +454,8 @@ class TestAsyncMappingsResource:
             include_invalid=True,
         )
 
-        assert route.calls[0].request.content
+        body = json.loads(route.calls[0].request.content)
+        assert body["include_invalid"] is True
 
     @pytest.mark.asyncio
     @respx.mock
@@ -459,8 +463,6 @@ class TestAsyncMappingsResource:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """Test async mapping concepts using source_codes."""
-        import json
-
         route = respx.post(f"{base_url}/concepts/map").mock(
             return_value=Response(200, json={"success": True, "data": {"mappings": []}})
         )

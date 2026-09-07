@@ -169,11 +169,13 @@ class Mappings:
                 [{"vocabulary_id": "SNOMED", "concept_code": "387517004"}].
                 Use this OR source_concepts, not both.
             mapping_type: Mapping type filter (direct, equivalent, broader, narrower)
-            include_invalid: Include invalid mappings
+            include_invalid: Include invalid mappings. Defaults to False and is
+                always sent explicitly.
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mapping results with summary
+            Mapping results with ``mappings``, per-input ``unmapped_sources``,
+            and a ``summary`` of requested, mapped, and unmapped sources.
 
         Raises:
             ValueError: If neither or both source_concepts and source_codes are provided
@@ -197,8 +199,7 @@ class Mappings:
             body["source_codes"] = source_codes
         if mapping_type:
             body["mapping_type"] = mapping_type
-        if include_invalid:
-            body["include_invalid"] = True
+        body["include_invalid"] = include_invalid
 
         params: dict[str, Any] = {}
         if vocab_release:
@@ -366,11 +367,13 @@ class AsyncMappings:
                 [{"vocabulary_id": "SNOMED", "concept_code": "387517004"}].
                 Use this OR source_concepts, not both.
             mapping_type: Mapping type filter (direct, equivalent, broader, narrower)
-            include_invalid: Include invalid mappings
+            include_invalid: Include invalid mappings. Defaults to False and is
+                always sent explicitly.
             vocab_release: Specific vocabulary release version (e.g., "2025.1")
 
         Returns:
-            Mapping results with summary
+            Mapping results with ``mappings``, per-input ``unmapped_sources``,
+            and a ``summary`` of requested, mapped, and unmapped sources.
 
         Raises:
             ValueError: If neither or both source_concepts and source_codes are provided
@@ -394,8 +397,7 @@ class AsyncMappings:
             body["source_codes"] = source_codes
         if mapping_type:
             body["mapping_type"] = mapping_type
-        if include_invalid:
-            body["include_invalid"] = True
+        body["include_invalid"] = include_invalid
 
         params: dict[str, Any] = {}
         if vocab_release:

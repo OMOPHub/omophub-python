@@ -61,6 +61,15 @@ for c in results["concepts"]:
 icd = client.concepts.get_by_code("ICD10CM", "E11.9")
 mappings = client.mappings.get(icd["concept_id"], target_vocabulary="SNOMED")
 
+# Or map native codes in one request. Every source that produces no mapping is
+# returned in unmapped_sources with source_not_found or no_mapping_found.
+mapped = client.mappings.map(
+    "SNOMED",
+    source_codes=[{"vocabulary_id": "ICD10CM", "concept_code": "E11.9"}],
+)
+print(mapped["summary"])
+print(mapped["unmapped_sources"])
+
 # Navigate concept hierarchy
 ancestors = client.hierarchy.ancestors(201826, max_levels=3)
 ```
