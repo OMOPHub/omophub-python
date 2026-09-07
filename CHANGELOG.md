@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.19.1] - 2026-09-07
+## [1.9.1] - 2026-09-07
 
 ### Added
 
@@ -328,8 +328,8 @@ and are not shipped in the wheel/sdist.
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.19.1...HEAD
-[1.19.1]: https://github.com/omopHub/omophub-python/compare/v1.9.0...v1.19.1
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.1...HEAD
+[1.9.1]: https://github.com/omopHub/omophub-python/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/omopHub/omophub-python/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/omopHub/omophub-python/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/omopHub/omophub-python/compare/v1.7.1...v1.8.0
