@@ -201,7 +201,8 @@ def similarity_search() -> None:
     """
     print("\n=== Similarity Search ===")
 
-    # Find concepts similar to Type 2 diabetes mellitus (concept_id=201826)
+    # Find concepts similar to Type 2 diabetes mellitus (concept_id=201826).
+    # Fusing both signals; omit `algorithm` for the "semantic" default.
     response = client.search.similar(concept_id=201826, algorithm="hybrid")
     print("Concepts similar to 'Type 2 diabetes mellitus':")
     for r in response["similar_concepts"][:5]:

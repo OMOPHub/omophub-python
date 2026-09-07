@@ -79,6 +79,20 @@ class ServerError(APIError):
     pass
 
 
+class ResponseError(OMOPHubError):
+    """The API responded successfully but not in the documented shape.
+
+    Raised instead of returning an empty result, so protocol drift is
+    distinguishable from "the server found nothing". An empty list is a real
+    answer; a payload the SDK cannot read is not, and silently turning one into
+    the other hides a breaking change until someone notices missing data.
+    """
+
+    def __init__(self, message: str, *, payload: Any = None) -> None:
+        self.payload = payload
+        super().__init__(message)
+
+
 class ConnectionError(OMOPHubError):
     """Network connection error."""
 

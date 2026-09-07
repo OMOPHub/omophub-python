@@ -237,9 +237,10 @@ results = client.search.bulk_semantic([
 Find concepts similar to a known concept or natural language query:
 
 ```python
-# Find concepts similar to a known concept
-results = client.search.similar(concept_id=201826, algorithm="hybrid")
-for r in results["results"]:
+# Find concepts similar to a known concept.
+# `algorithm` defaults to "semantic"; "lexical" and "hybrid" are also available.
+results = client.search.similar(concept_id=201826)
+for r in results["similar_concepts"]:
     print(f"{r['concept_name']} (score: {r['similarity_score']:.2f})")
 
 # Find similar concepts using a natural language query

@@ -14,11 +14,13 @@ class Suggestion(TypedDict):
     """Autocomplete suggestion."""
 
     suggestion: str
-    type: NotRequired[str]
-    match_type: NotRequired[str]
-    match_score: NotRequired[float]
-    concept_id: NotRequired[int]
-    vocabulary_id: NotRequired[str]
+    concept_id: int
+    concept_code: str
+    vocabulary_id: str
+    domain_id: str
+    concept_class_id: str
+    standard_concept: str | None
+    context: NotRequired[dict[str, str]]
 
 
 class SemanticSearchResult(TypedDict):
@@ -43,6 +45,14 @@ class SemanticSearchMeta(TypedDict, total=False):
     filters_applied: dict[str, Any]
 
 
+class SimilarConceptScores(TypedDict, total=False):
+    """Per-signal scores behind a fused similarity score."""
+
+    semantic: float
+    lexical: float
+    hybrid: float
+
+
 class SimilarConcept(TypedDict):
     """A concept similar to the query concept."""
 
@@ -53,8 +63,14 @@ class SimilarConcept(TypedDict):
     concept_class_id: str
     standard_concept: str | None
     concept_code: str
-    similarity_score: float
+    # Optional because ``include_scores=False`` removes it. It was typed as
+    # required, which made that documented option a type error.
+    similarity_score: NotRequired[float]
     matched_text: NotRequired[str]
+    scores: NotRequired[SimilarConceptScores]
+    explanation: NotRequired[str]
+    #: Deprecated alias for ``explanation``, still emitted by the API for one
+    #: release. Read ``explanation``.
     similarity_explanation: NotRequired[str]
 
 
@@ -64,10 +80,51 @@ class SimilarSearchMetadata(TypedDict, total=False):
     original_query: str
     algorithm_used: str
     similarity_threshold: float
+    #: How many concepts cleared ``similarity_threshold`` inside the bounded
+    #: retrieval pool - not how many were evaluated. The pool holds up to 500
+    #: and everything below the threshold is discarded before this is counted.
     total_candidates: int
     results_returned: int
     processing_time_ms: int
     embedding_latency_ms: int
+    #: True when retrieval hit its candidate bound, so ``total_candidates`` and
+    #: the pagination totals count only what qualified inside the pool that was
+    #: searched, not the whole corpus.
+    totals_are_lower_bound: bool
+    #: The algorithm that was requested, when a fallback served the request
+    #: instead (``hybrid`` degrading to ``lexical`` when the embedding service
+    #: is unavailable).
+    degraded_from: str
+    source_concept_id: int
+
+
+class SourceConcept(TypedDict, total=False):
+    """The reference concept a similarity search started from."""
+
+    concept_id: int
+    concept_name: str
+    concept_code: str
+    vocabulary_id: str
+    domain_id: str
+    concept_class_id: str
+    standard_concept: str | None
+
+
+class SimilarSearchPagination(TypedDict, total=False):
+    """Pagination for a similarity search.
+
+    Lifted here from the response envelope's ``meta``. Page while ``has_next``
+    is true rather than comparing ``page`` to ``total_pages``: every algorithm
+    ranks a bounded candidate pool, so the totals may be lower bounds (see
+    ``SimilarSearchMetadata.totals_are_lower_bound``).
+    """
+
+    page: int
+    page_size: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
 
 
 class SimilarSearchResult(TypedDict):
@@ -75,6 +132,8 @@ class SimilarSearchResult(TypedDict):
 
     similar_concepts: list[SimilarConcept]
     search_metadata: SimilarSearchMetadata
+    source_concept: NotRequired[SourceConcept]
+    pagination: NotRequired[SimilarSearchPagination]
 
 
 # ---------------------------------------------------------------------------
