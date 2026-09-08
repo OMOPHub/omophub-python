@@ -1,0 +1,26 @@
+src/omophub/resources/search.py
+  s_0fd210701b7f1e::t_7ddcbf59b09cf2 346,725
+  s_0fd210701b7f1e::t_ff3c68209f3302 66-67
+CHANGELOG.md
+  s_0fd210701b7f1e::t_6bd420a826b6d3 8-15,339-340
+src/omophub/types/search.py
+  s_0fd210701b7f1e::t_7ddcbf59b09cf2 14,17-18
+tests/unit/resources/test_search.py
+  s_0fd210701b7f1e::t_ff3c68209f3302 188,211,225,256,271,367,399
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ce7a9670b43e04e6812dc264bc5d0690fbd82d02",
+  "prompts": {},
+  "sessions": {
+    "s_0fd210701b7f1e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07885-99a7-7062-b3c0-03e7f1077c3d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "alex-omophub <sdk@omophub.com>"
+    }
+  }
+}
