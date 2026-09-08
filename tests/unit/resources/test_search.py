@@ -185,7 +185,7 @@ class TestSearchResource:
                 ],
             },
         }
-        route = respx.get(f"{base_url}/search/suggest").mock(
+        route = respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(200, json=autocomplete_response)
         )
 
@@ -208,7 +208,7 @@ class TestSearchResource:
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """The older response shape stays supported."""
-        respx.get(f"{base_url}/search/suggest").mock(
+        respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(
                 200,
                 json={"success": True, "data": [{"suggestion": "diabetes"}]},
@@ -222,7 +222,7 @@ class TestSearchResource:
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """An empty list is a real answer and must not raise."""
-        respx.get(f"{base_url}/search/suggest").mock(
+        respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(
                 200,
                 json={"success": True, "data": {"query": "zzz", "suggestions": []}},
@@ -253,7 +253,7 @@ class TestSearchResource:
         empty result: the caller saw an empty box with no way to learn the SDK
         could no longer read the server.
         """
-        respx.get(f"{base_url}/search/suggest").mock(
+        respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(200, json={"success": True, "data": payload})
         )
 
@@ -268,7 +268,7 @@ class TestSearchResource:
         self, sync_client: OMOPHub, base_url: str
     ) -> None:
         """The old SDK option remains compatible without leaking to the API."""
-        route = respx.get(f"{base_url}/search/suggest").mock(
+        route = respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(
                 200,
                 json={
@@ -364,7 +364,7 @@ class TestAsyncSearchResource:
         self, async_client: omophub.AsyncOMOPHub, base_url: str
     ) -> None:
         """The async path shares the sync path's reader, and its contract."""
-        respx.get(f"{base_url}/search/suggest").mock(
+        respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(
                 200, json={"success": True, "data": {"query": "asp"}}
             )
@@ -396,7 +396,7 @@ class TestAsyncSearchResource:
                 ],
             },
         }
-        respx.get(f"{base_url}/search/suggest").mock(
+        respx.get(f"{base_url}/search/autocomplete").mock(
             return_value=Response(200, json=autocomplete_response)
         )
 
