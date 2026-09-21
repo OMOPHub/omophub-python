@@ -114,8 +114,8 @@ class Concepts:
         """Get a concept by vocabulary and code.
 
         Args:
-            vocabulary_id: The vocabulary ID (e.g., "SNOMED", "ICD10CM")
-            concept_code: The concept code within the vocabulary
+            vocabulary_id: The raw, URL-unencoded vocabulary ID (e.g., "SNOMED", "ICD10CM")
+            concept_code: The raw, URL-unencoded concept code within the vocabulary
             include_relationships: Include related concepts (parents/children)
             include_synonyms: Include concept synonyms
             include_hierarchy: Include hierarchy information
@@ -389,8 +389,8 @@ class AsyncConcepts:
         """Get a concept by vocabulary and code.
 
         Args:
-            vocabulary_id: The vocabulary ID (e.g., "SNOMED", "ICD10CM")
-            concept_code: The concept code within the vocabulary
+            vocabulary_id: The raw, URL-unencoded vocabulary ID (e.g., "SNOMED", "ICD10CM")
+            concept_code: The raw, URL-unencoded concept code within the vocabulary
             include_relationships: Include related concepts (parents/children)
             include_synonyms: Include concept synonyms
             include_hierarchy: Include hierarchy information
