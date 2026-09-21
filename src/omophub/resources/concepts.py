@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import quote
 
 if TYPE_CHECKING:
     from .._request import AsyncRequest, Request
@@ -54,6 +55,11 @@ class RelationshipsParams(TypedDict, total=False):
     include_invalid: bool
     page: int
     page_size: int
+
+
+def _path_segment(value: str) -> str:
+    """Percent-encode an API path segment without preserving slashes."""
+    return quote(value, safe="")
 
 
 class Concepts:
@@ -129,7 +135,7 @@ class Concepts:
             params["vocab_release"] = vocab_release
 
         return self._request.get(
-            f"/concepts/by-code/{vocabulary_id}/{concept_code}",
+            f"/concepts/by-code/{_path_segment(vocabulary_id)}/{_path_segment(concept_code)}",
             params=params or None,
         )
 
@@ -404,7 +410,7 @@ class AsyncConcepts:
             params["vocab_release"] = vocab_release
 
         return await self._request.get(
-            f"/concepts/by-code/{vocabulary_id}/{concept_code}",
+            f"/concepts/by-code/{_path_segment(vocabulary_id)}/{_path_segment(concept_code)}",
             params=params or None,
         )
 
