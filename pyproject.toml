@@ -49,6 +49,8 @@ classifiers = [
 ]
 dependencies = [
     "httpx>=0.27.0",
+    "anyio>=4.14.2",  # Security floor for HTTPX's transitive dependency
+    "certifi>=2026.10.19",  # Exclude compromised emSign certificate authorities
     "typing_extensions>=4.5.0",
 ]
 
@@ -65,7 +67,13 @@ dev = [
 # External FHIR client libraries. Duck-typed by the resolver, so not
 # required for core SDK use. Install via `pip install omophub[fhirpy]`
 # or `pip install omophub[fhir-resources]` if you want these helpers.
-fhirpy = ["fhirpy>=1.4.0"]
+fhirpy = [
+    "fhirpy>=1.4.0",
+    # Security floors for fhirpy's HTTP clients and their dependencies.
+    "aiohttp>=3.14.4",
+    "multidict>=6.9.1",
+    "urllib3>=2.8.0",
+]
 fhir-resources = ["fhir.resources>=7.0.0"]
 
 [project.urls]
