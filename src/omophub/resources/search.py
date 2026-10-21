@@ -63,8 +63,8 @@ class AdvancedSearchParams(TypedDict, total=False):
 def _read_suggestions(payload: Any) -> list[Suggestion]:
     """Read the suggestions out of an autocomplete payload.
 
-    `/search/suggest` has returned two shapes over its life: a bare list, and
-    an object with a `suggestions` key. Both are accepted.
+    Autocomplete payloads have existed as both a bare list and an object with
+    a `suggestions` key. Both are accepted.
 
     Anything else raises. This used to `return []`, which made a changed
     response indistinguishable from "no suggestions matched" - a caller saw an
@@ -343,7 +343,7 @@ class Search:
         if selected_domains:
             params["domain_ids"] = ",".join(selected_domains)
 
-        payload = self._request.get("/search/suggest", params=params)
+        payload = self._request.get("/search/autocomplete", params=params)
         return _read_suggestions(payload)
 
     def semantic(
@@ -722,7 +722,7 @@ class AsyncSearch:
         if selected_domains:
             params["domain_ids"] = ",".join(selected_domains)
 
-        payload = await self._request.get("/search/suggest", params=params)
+        payload = await self._request.get("/search/autocomplete", params=params)
         return _read_suggestions(payload)
 
     async def semantic(

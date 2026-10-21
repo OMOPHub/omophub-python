@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-09-08
+
+### Changed
+
+- Autocomplete now calls the canonical `/search/autocomplete` endpoint and
+  models its compact suggestion entries. `domain_ids` and the deprecated
+  `domains` alias remain supported.
+
 ## [1.9.1] - 2026-09-07
 
 ### Added
@@ -328,7 +336,8 @@ and are not shipped in the wheel/sdist.
 - Full type hints and PEP 561 compliance
 - HTTP/2 support via httpx
 
-[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.9.1...HEAD
+[Unreleased]: https://github.com/omopHub/omophub-python/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/omopHub/omophub-python/compare/v1.9.1...v1.10.0
 [1.9.1]: https://github.com/omopHub/omophub-python/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/omopHub/omophub-python/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/omopHub/omophub-python/compare/v1.8.0...v1.8.1

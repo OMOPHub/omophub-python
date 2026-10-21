@@ -11,9 +11,11 @@ if TYPE_CHECKING:
 
 
 class Suggestion(TypedDict, total=False):
-    """Autocomplete suggestion, including optional enriched concept metadata."""
+    """Compact autocomplete suggestion with optional legacy concept metadata."""
 
     suggestion: Required[str]
+    type: str
+    count: int
     concept_id: int
     concept_code: str
     vocabulary_id: str
