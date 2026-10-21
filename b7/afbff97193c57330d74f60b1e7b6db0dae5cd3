@@ -1,0 +1,25 @@
+.github/dependabot.yml
+  s_6d3a9daaf62832::t_1d78e366e62d3e 1-16
+.github/workflows/ci.yml
+  s_6d3a9daaf62832::t_f1e611bc49f7d6 11-31
+pyproject.toml
+  s_6d3a9daaf62832::t_0a8e39f419ebb1 52-53,70-76
+uv.lock
+  s_6d3a9daaf62832::t_410fd3f644db97 16,29,31-190,217,224,226,258,260,262,785,790,792-961,1023-1024,1043,1045-1046,1051-1053,1057,1066,1554,1556,1558,1563,1570,1572-1708
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7afbff97193c57330d74f60b1e7b6db0dae5cd3",
+  "prompts": {},
+  "sessions": {
+    "s_6d3a9daaf62832": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16038-b441-7c21-be6c-6253c947f491",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "alex-omophub <alex@omophub.com>"
+    }
+  }
+}
