@@ -61,6 +61,22 @@ class TestConceptsResource:
         assert concept["concept_id"] == 201826
 
     @respx.mock
+    def test_get_concept_by_code_encodes_path_segments(
+        self, sync_client: OMOPHub, mock_api_response: dict, base_url: str
+    ) -> None:
+        """Concept codes containing slashes remain one URL path segment."""
+        route = respx.get(f"{base_url}/concepts/by-code/ICDO3/8032%2F3").mock(
+            return_value=Response(200, json=mock_api_response)
+        )
+
+        sync_client.concepts.get_by_code("ICDO3", "8032/3")
+
+        assert route.called
+        assert str(route.calls[0].request.url).endswith(
+            "/concepts/by-code/ICDO3/8032%2F3"
+        )
+
+    @respx.mock
     def test_batch_concepts(
         self, sync_client: OMOPHub, base_url: str, mock_concept: dict
     ) -> None:
@@ -439,6 +455,23 @@ class TestAsyncConceptsResource:
 
         concept = await async_client.concepts.get_by_code("SNOMED", "44054006")
         assert concept["concept_id"] == 201826
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_get_by_code_encodes_path_segments(
+        self, async_client: omophub.AsyncOMOPHub, mock_api_response: dict, base_url: str
+    ) -> None:
+        """Async concept codes containing slashes remain one URL path segment."""
+        route = respx.get(f"{base_url}/concepts/by-code/ICDO3/8032%2F3").mock(
+            return_value=Response(200, json=mock_api_response)
+        )
+
+        await async_client.concepts.get_by_code("ICDO3", "8032/3")
+
+        assert route.called
+        assert str(route.calls[0].request.url).endswith(
+            "/concepts/by-code/ICDO3/8032%2F3"
+        )
 
     @pytest.mark.asyncio
     @respx.mock
