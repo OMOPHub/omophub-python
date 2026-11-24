@@ -1,0 +1,1 @@
+include examples/demo.toml examples/run_demo.py

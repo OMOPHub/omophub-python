@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundworkers-omophub"
+version = "0.3.0"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+description = "Release-pinned OMOPHub vocabulary tools for Groundworkers"
+requires-python = ">=3.12"
+dependencies = ["groundworkers>=0.11,<0.12", "httpx>=0.27,<1", "pydantic>=2,<3"]
+
+[project.urls]
+Repository = "https://github.com/OMOPHub/omophub-python"
+Documentation = "https://github.com/OMOPHub/omophub-python/tree/main/plugins/groundworkers"
+
+[project.entry-points."groundworkers.plugins"]
+omophub = "groundworkers_omophub:plugin"
+
+[tool.setuptools.packages.find]
+where = ["src"]

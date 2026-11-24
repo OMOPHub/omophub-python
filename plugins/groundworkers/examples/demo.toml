@@ -1,0 +1,11 @@
+# Groundworkers requires a CDM configuration to start. These demo tools read OMOPHub.
+[connections.demo]
+dialect = "sqlite"
+database_name = ":memory:"
+
+[databases.cdm_db]
+kind = "cdm"
+connection = "demo"
+
+[tools.groundworkers]
+cdm_db = "cdm_db"

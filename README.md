@@ -28,6 +28,8 @@ Working with OHDSI ATHENA vocabularies traditionally requires downloading multi-
 | Manually update vocabularies quarterly | Always current data |
 | Local infrastructure required | Works anywhere Python runs |
 
+For MCP workflows, the [Groundworkers plugin](plugins/groundworkers/README.md) queries hosted OMOP vocabulary snapshots and compares mappings across named releases.
+
 ## Installation
 
 ```bash
